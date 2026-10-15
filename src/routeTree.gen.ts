@@ -11,13 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as GuidelinesRouteImport } from './routes/guidelines'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
 import { Route as CollectionsSlugRouteImport } from './routes/collections.$slug'
 import { Route as MovieSlugRouteImport } from './routes/movie.$slug'
 import { Route as QuestionsIdRouteImport } from './routes/questions.$id'
 import { Route as ReviewsIdRouteImport } from './routes/reviews.$id'
 import { Route as SeriesSlugRouteImport } from './routes/series.$slug'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,9 +33,24 @@ const ExploreRoute = ExploreRouteImport.update({
   path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuidelinesRoute = GuidelinesRouteImport.update({
+  id: '/guidelines',
+  path: '/guidelines',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CollectionsIndexRoute = CollectionsIndexRouteImport.update({
@@ -64,39 +83,56 @@ const SeriesSlugRoute = SeriesSlugRouteImport.update({
   path: '/series/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/guidelines': typeof GuidelinesRoute
+  '/library': typeof LibraryRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
   '/collections/$slug': typeof CollectionsSlugRoute
   '/movie/$slug': typeof MovieSlugRoute
   '/questions/$id': typeof QuestionsIdRoute
   '/reviews/$id': typeof ReviewsIdRoute
   '/series/$slug': typeof SeriesSlugRoute
+  '/u/$username': typeof UUsernameRoute
   '/collections/': typeof CollectionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/guidelines': typeof GuidelinesRoute
+  '/library': typeof LibraryRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
   '/collections/$slug': typeof CollectionsSlugRoute
   '/movie/$slug': typeof MovieSlugRoute
   '/questions/$id': typeof QuestionsIdRoute
   '/reviews/$id': typeof ReviewsIdRoute
   '/series/$slug': typeof SeriesSlugRoute
+  '/u/$username': typeof UUsernameRoute
   '/collections': typeof CollectionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/guidelines': typeof GuidelinesRoute
+  '/library': typeof LibraryRoute
   '/search': typeof SearchRoute
+  '/settings': typeof SettingsRoute
   '/collections/$slug': typeof CollectionsSlugRoute
   '/movie/$slug': typeof MovieSlugRoute
   '/questions/$id': typeof QuestionsIdRoute
   '/reviews/$id': typeof ReviewsIdRoute
   '/series/$slug': typeof SeriesSlugRoute
+  '/u/$username': typeof UUsernameRoute
   '/collections/': typeof CollectionsIndexRoute
 }
 export interface FileRouteTypes {
@@ -104,46 +140,62 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/explore'
+    | '/guidelines'
+    | '/library'
     | '/search'
+    | '/settings'
     | '/collections/$slug'
     | '/movie/$slug'
     | '/questions/$id'
     | '/reviews/$id'
     | '/series/$slug'
+    | '/u/$username'
     | '/collections/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/explore'
+    | '/guidelines'
+    | '/library'
     | '/search'
+    | '/settings'
     | '/collections/$slug'
     | '/movie/$slug'
     | '/questions/$id'
     | '/reviews/$id'
     | '/series/$slug'
+    | '/u/$username'
     | '/collections'
   id:
     | '__root__'
     | '/'
     | '/explore'
+    | '/guidelines'
+    | '/library'
     | '/search'
+    | '/settings'
     | '/collections/$slug'
     | '/movie/$slug'
     | '/questions/$id'
     | '/reviews/$id'
     | '/series/$slug'
+    | '/u/$username'
     | '/collections/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExploreRoute: typeof ExploreRoute
+  GuidelinesRoute: typeof GuidelinesRoute
+  LibraryRoute: typeof LibraryRoute
   SearchRoute: typeof SearchRoute
+  SettingsRoute: typeof SettingsRoute
   CollectionsSlugRoute: typeof CollectionsSlugRoute
   MovieSlugRoute: typeof MovieSlugRoute
   QuestionsIdRoute: typeof QuestionsIdRoute
   ReviewsIdRoute: typeof ReviewsIdRoute
   SeriesSlugRoute: typeof SeriesSlugRoute
+  UUsernameRoute: typeof UUsernameRoute
   CollectionsIndexRoute: typeof CollectionsIndexRoute
 }
 
@@ -163,11 +215,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guidelines': {
+      id: '/guidelines'
+      path: '/guidelines'
+      fullPath: '/guidelines'
+      preLoaderRoute: typeof GuidelinesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/collections/': {
@@ -212,18 +285,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SeriesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExploreRoute: ExploreRoute,
+  GuidelinesRoute: GuidelinesRoute,
+  LibraryRoute: LibraryRoute,
   SearchRoute: SearchRoute,
+  SettingsRoute: SettingsRoute,
   CollectionsSlugRoute: CollectionsSlugRoute,
   MovieSlugRoute: MovieSlugRoute,
   QuestionsIdRoute: QuestionsIdRoute,
   ReviewsIdRoute: ReviewsIdRoute,
   SeriesSlugRoute: SeriesSlugRoute,
+  UUsernameRoute: UUsernameRoute,
   CollectionsIndexRoute: CollectionsIndexRoute,
 }
 export const routeTree = rootRouteImport
