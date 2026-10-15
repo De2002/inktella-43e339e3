@@ -11,7 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as CollectionsIndexRouteImport } from './routes/collections.index'
+import { Route as CollectionsSlugRouteImport } from './routes/collections.$slug'
 import { Route as MovieSlugRouteImport } from './routes/movie.$slug'
+import { Route as QuestionsIdRouteImport } from './routes/questions.$id'
+import { Route as ReviewsIdRouteImport } from './routes/reviews.$id'
 import { Route as SeriesSlugRouteImport } from './routes/series.$slug'
 
 const IndexRoute = IndexRouteImport.update({
@@ -24,9 +29,34 @@ const ExploreRoute = ExploreRouteImport.update({
   path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollectionsIndexRoute = CollectionsIndexRouteImport.update({
+  id: '/collections/',
+  path: '/collections/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollectionsSlugRoute = CollectionsSlugRouteImport.update({
+  id: '/collections/$slug',
+  path: '/collections/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MovieSlugRoute = MovieSlugRouteImport.update({
   id: '/movie/$slug',
   path: '/movie/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QuestionsIdRoute = QuestionsIdRouteImport.update({
+  id: '/questions/$id',
+  path: '/questions/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewsIdRoute = ReviewsIdRouteImport.update({
+  id: '/reviews/$id',
+  path: '/reviews/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SeriesSlugRoute = SeriesSlugRouteImport.update({
@@ -38,35 +68,83 @@ const SeriesSlugRoute = SeriesSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/search': typeof SearchRoute
+  '/collections/$slug': typeof CollectionsSlugRoute
   '/movie/$slug': typeof MovieSlugRoute
+  '/questions/$id': typeof QuestionsIdRoute
+  '/reviews/$id': typeof ReviewsIdRoute
   '/series/$slug': typeof SeriesSlugRoute
+  '/collections/': typeof CollectionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/search': typeof SearchRoute
+  '/collections/$slug': typeof CollectionsSlugRoute
   '/movie/$slug': typeof MovieSlugRoute
+  '/questions/$id': typeof QuestionsIdRoute
+  '/reviews/$id': typeof ReviewsIdRoute
   '/series/$slug': typeof SeriesSlugRoute
+  '/collections': typeof CollectionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/explore': typeof ExploreRoute
+  '/search': typeof SearchRoute
+  '/collections/$slug': typeof CollectionsSlugRoute
   '/movie/$slug': typeof MovieSlugRoute
+  '/questions/$id': typeof QuestionsIdRoute
+  '/reviews/$id': typeof ReviewsIdRoute
   '/series/$slug': typeof SeriesSlugRoute
+  '/collections/': typeof CollectionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/explore' | '/movie/$slug' | '/series/$slug'
+  fullPaths:
+    | '/'
+    | '/explore'
+    | '/search'
+    | '/collections/$slug'
+    | '/movie/$slug'
+    | '/questions/$id'
+    | '/reviews/$id'
+    | '/series/$slug'
+    | '/collections/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/explore' | '/movie/$slug' | '/series/$slug'
-  id: '__root__' | '/' | '/explore' | '/movie/$slug' | '/series/$slug'
+  to:
+    | '/'
+    | '/explore'
+    | '/search'
+    | '/collections/$slug'
+    | '/movie/$slug'
+    | '/questions/$id'
+    | '/reviews/$id'
+    | '/series/$slug'
+    | '/collections'
+  id:
+    | '__root__'
+    | '/'
+    | '/explore'
+    | '/search'
+    | '/collections/$slug'
+    | '/movie/$slug'
+    | '/questions/$id'
+    | '/reviews/$id'
+    | '/series/$slug'
+    | '/collections/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ExploreRoute: typeof ExploreRoute
+  SearchRoute: typeof SearchRoute
+  CollectionsSlugRoute: typeof CollectionsSlugRoute
   MovieSlugRoute: typeof MovieSlugRoute
+  QuestionsIdRoute: typeof QuestionsIdRoute
+  ReviewsIdRoute: typeof ReviewsIdRoute
   SeriesSlugRoute: typeof SeriesSlugRoute
+  CollectionsIndexRoute: typeof CollectionsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -85,11 +163,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collections/': {
+      id: '/collections/'
+      path: '/collections'
+      fullPath: '/collections/'
+      preLoaderRoute: typeof CollectionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collections/$slug': {
+      id: '/collections/$slug'
+      path: '/collections/$slug'
+      fullPath: '/collections/$slug'
+      preLoaderRoute: typeof CollectionsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/movie/$slug': {
       id: '/movie/$slug'
       path: '/movie/$slug'
       fullPath: '/movie/$slug'
       preLoaderRoute: typeof MovieSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/questions/$id': {
+      id: '/questions/$id'
+      path: '/questions/$id'
+      fullPath: '/questions/$id'
+      preLoaderRoute: typeof QuestionsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reviews/$id': {
+      id: '/reviews/$id'
+      path: '/reviews/$id'
+      fullPath: '/reviews/$id'
+      preLoaderRoute: typeof ReviewsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/series/$slug': {
@@ -105,8 +218,13 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ExploreRoute: ExploreRoute,
+  SearchRoute: SearchRoute,
+  CollectionsSlugRoute: CollectionsSlugRoute,
   MovieSlugRoute: MovieSlugRoute,
+  QuestionsIdRoute: QuestionsIdRoute,
+  ReviewsIdRoute: ReviewsIdRoute,
   SeriesSlugRoute: SeriesSlugRoute,
+  CollectionsIndexRoute: CollectionsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
