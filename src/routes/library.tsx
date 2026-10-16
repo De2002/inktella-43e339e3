@@ -43,7 +43,7 @@ function LibraryPage() {
 
   return (
     <div>
-      <PageHeader title="Your library" sub={<>Hi {me.displayName}. <Link to="/u/$username" params={{ username: me.username }} className="underline underline-offset-4">View public profile</Link></> as unknown as string} />
+      <PageHeader title="Your library" sub={<>Hi {me.displayName}. <Link to="/u/$username" params={{ username: me.username }} className="underline underline-offset-4">View public profile</Link></>} />
       <div className="flex gap-1 border-b">
         {([["watched", "Watched"], ["want", "Want to watch"], ["collections", "Collections"]] as const).map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)} className={cn("border-b-2 px-3 py-3 text-sm", tab === k ? "border-foreground" : "border-transparent text-muted-foreground")}>{l}</button>
