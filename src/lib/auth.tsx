@@ -1,7 +1,6 @@
-import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, type ReactNode } from "react";
 import { toast } from "sonner";
 import { getDB } from "./store";
-import { AuthDialog } from "@/components/AuthDialog";
 
 type Mode = "signin" | "signup";
 interface AuthCtx {
@@ -13,11 +12,6 @@ interface AuthCtx {
 const Ctx = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<Mode>("signin");
-  const [reason, setReason] = useState<string | undefined>();
-  const pending = useRef<(() => void) | null>(null);
-
   const run = (fn: () => void) => {
     try {
       fn();
@@ -29,40 +23,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const requireAuth = useCallback((action: () => void, why?: string) => {
     const db = getDB();
     if (db.sessionUserId) return run(action);
-    pending.current = action;
-    setReason(why);
-    setMode("signin");
-    setOpen(true);
+    void why;
+    window.location.href = "https://accounts.inktella.com/sign-in";
   }, []);
 
   const openAuth = useCallback((m: Mode = "signin") => {
-    pending.current = null;
-    setReason(undefined);
-    setMode(m);
-    setOpen(true);
+    window.location.href = `https://accounts.inktella.com/${m === "signup" ? "sign-up" : "sign-in"}`;
   }, []);
 
-  return (
-    <Ctx.Provider value={{ requireAuth, openAuth }}>
-      {children}
-      <AuthDialog
-        open={open}
-        mode={mode}
-        reason={reason}
-        onModeChange={setMode}
-        onOpenChange={(o) => {
-          setOpen(o);
-          if (!o) pending.current = null;
-        }}
-        onSuccess={() => {
-          setOpen(false);
-          const a = pending.current;
-          pending.current = null;
-          if (a) setTimeout(() => run(a), 0);
-        }}
-      />
-    </Ctx.Provider>
-  );
+  return <Ctx.Provider value={{ requireAuth, openAuth }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {
