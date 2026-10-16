@@ -5,7 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { cn } from "@/lib/utils";
 import { titlePath, useDB } from "@/lib/store";
 import { TABS, type TabKey } from "@/lib/tabs";
-import type { Kind } from "@/lib/types";
+import type { Kind, Post, Question, Review } from "@/lib/types";
 import { Empty, LoadMore, Poster, useCursor } from "./bits";
 import { Composer } from "./Composer";
 import { PostItem, QuestionCard, ReviewCard } from "./FeedItems";
@@ -26,7 +26,8 @@ export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: 
 
   const cfg = TABS.find((t) => t.key === tab) ?? TABS[0];
 
-  const items = useMemo(() => {
+  type Item = { kind: "review"; r: Review } | { kind: "question"; q: Question } | { kind: "post"; p: Post };
+  const items = useMemo((): Item[] => {
     if (!title) return [];
     const by = (a: { createdAt: string }, b: { createdAt: string }) => b.createdAt.localeCompare(a.createdAt);
     if (cfg.key === "reviews") return db.reviews.filter((r) => r.titleId === title.id && !r.removed).sort(by).map((r) => ({ kind: "review" as const, r }));

@@ -11,5 +11,5 @@ export const Route = createFileRoute("/series/$slug")({
 function SeriesPage() {
   const { slug } = Route.useParams();
   const { tab } = Route.useSearch();
-  return <TitlePage kind="series" slug={slug} tab={tab} />;
+  return <TitlePage kind="series" slug={slug} tab={tab ?? "lessons"} />;
 }

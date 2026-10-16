@@ -2,9 +2,9 @@ import { seedTitles } from "./seed";
 import { TABS, type TabKey } from "./tabs";
 import type { Kind } from "./types";
 
-export function validateTab(s: Record<string, unknown>): { tab: TabKey } {
-  const tab = TABS.find((t) => t.key === s.tab)?.key ?? "lessons";
-  return { tab };
+export function validateTab(s: Record<string, unknown>): { tab?: TabKey } {
+  const tab = TABS.find((t) => t.key === s.tab)?.key;
+  return tab && tab !== "lessons" ? { tab } : {};
 }
 
 /** SEO head for title pages, built from the server-known catalog. Never includes spoiler content. */
