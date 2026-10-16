@@ -21,6 +21,7 @@ export interface Title {
   country?: string;
   language?: string;
   trailerUrl?: string;
+  posterUrl?: string;
   people: Person[];
   status: TitleStatus;
   hue: number;
