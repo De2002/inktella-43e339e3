@@ -1,0 +1,11 @@
+name = "inktella-43e339e3"
+main = ".output/server/index.mjs"
+compatibility_date = "2026-10-16"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".output/public"
+not_found_handling = "single-page-application"
+
+[observability]
+enabled = true
