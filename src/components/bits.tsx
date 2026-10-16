@@ -98,7 +98,7 @@ export function Empty({ children }: { children: ReactNode }) {
   return <p className="py-16 text-center font-display text-xl text-muted-foreground">{children}</p>;
 }
 
-export function PageHeader({ title, sub }: { title: string; sub?: string }) {
+export function PageHeader({ title, sub }: { title: string; sub?: ReactNode }) {
   return (
     <header className="mb-6 pt-6 md:pt-10">
       <h1 className="text-4xl md:text-5xl">{title}</h1>
