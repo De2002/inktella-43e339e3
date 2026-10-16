@@ -19,7 +19,7 @@ function Logo() {
   return (
     <Link
       to="/"
-      className="flex items-center gap-2 font-display text-2xl tracking-tight"
+      className="flex items-center gap-1 font-display text-2xl tracking-tight"
       aria-label="Inktella home"
     >
       <img
@@ -27,7 +27,7 @@ function Logo() {
         alt=""
         className="size-8 rounded-md object-cover"
       />
-      inktella<span className="text-like">.</span>
+      inktella
     </Link>
   );
 }

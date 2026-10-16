@@ -1,9 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
 import { useDB } from "@/lib/store";
 import { Avatar, Empty, Poster, Spoiler, TimeAgo, TitleLink, UserLink } from "@/components/bits";
-import { ItemMenu, LikeButton, Replies, ReplyComposer, ShareButton } from "@/components/Engagement";
-import { Button } from "@/components/ui/button";
+import { ItemMenu, LikeButton, Replies, ShareButton } from "@/components/Engagement";
 
 export const Route = createFileRoute("/reviews/$id")({
   head: () => ({
@@ -23,7 +21,6 @@ function ReviewPage() {
   const { id } = Route.useParams();
   const db = useDB();
   const navigate = useNavigate();
-  const [replyOpen, setReplyOpen] = useState(false);
   const r = db.reviews.find((x) => x.id === id && !x.removed);
   if (!r) return <Empty>This review isn't available.</Empty>;
   const author = db.users.find((u) => u.id === r.userId);
@@ -31,14 +28,9 @@ function ReviewPage() {
 
   return (
     <article className="mx-auto max-w-2xl pt-8">
-      <TitleLink
-        title={title}
-        className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground"
-      >
+      <TitleLink title={title} className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground">
         <Poster title={title} size="xs" className="w-8" />
-        <span>
-          Review of <span className="text-foreground">{title.name}</span> ({title.year})
-        </span>
+        <span>Review of <span className="text-foreground">{title.name}</span> ({title.year})</span>
       </TitleLink>
       {r.heading && <h1 className="mt-6 text-4xl leading-tight md:text-5xl">{r.heading}</h1>}
       <div className="mt-4 flex items-center gap-2 text-sm">
@@ -48,18 +40,7 @@ function ReviewPage() {
         <TimeAgo iso={r.createdAt} />
         {r.updatedAt && <span className="text-xs text-subtle">updated</span>}
         <span className="ml-auto">
-          <ItemMenu
-            type="review"
-            id={r.id}
-            ownerId={r.userId}
-            onEdit={() =>
-              navigate({
-                to: title.kind === "movie" ? "/movie/$slug" : "/series/$slug",
-                params: { slug: title.slug },
-                search: { tab: "reviews" },
-              })
-            }
-          />
+          <ItemMenu type="review" id={r.id} ownerId={r.userId} onEdit={() => navigate({ to: title.kind === "movie" ? "/movie/$slug" : "/series/$slug", params: { slug: title.slug }, search: { tab: "reviews" } })} />
         </span>
       </div>
       <div className="mt-6">
@@ -72,20 +53,7 @@ function ReviewPage() {
         <ShareButton path={`/reviews/${r.id}`} />
       </div>
       <h2 className="mt-8 text-2xl">Discussion</h2>
-      <Replies targetType="review" targetId={r.id} onReply={() => setReplyOpen(true)} />
-      <Button
-        onClick={() => setReplyOpen(true)}
-        className="fixed bottom-20 right-5 z-10 rounded-full px-5 shadow-lg md:bottom-8 md:right-8"
-      >
-        Reply
-      </Button>
-      <ReplyComposer
-        targetType="review"
-        targetId={r.id}
-        open={replyOpen}
-        onOpenChange={setReplyOpen}
-        replyingTo={author?.displayName}
-      />
+      <Replies targetType="review" targetId={r.id} />
     </article>
   );
 }
