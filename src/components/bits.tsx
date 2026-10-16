@@ -1,44 +1,22 @@
 import { Link } from "@tanstack/react-router";
 import { formatDistanceToNowStrict, format } from "date-fns";
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { titlePath } from "@/lib/store";
 import type { Title, User } from "@/lib/types";
 
-export function Poster({
-  title,
-  className,
-  size = "md",
-}: {
-  title: Pick<Title, "name" | "year" | "hue" | "kind"> & Pick<Title, "posterUrl">;
-  className?: string;
-  size?: "xs" | "sm" | "md" | "lg";
-}) {
+export function Poster({ title, className, size = "md" }: { title: Pick<Title, "name" | "year" | "hue" | "kind">; className?: string; size?: "xs" | "sm" | "md" | "lg" }) {
   const text = { xs: "text-[9px]", sm: "text-sm", md: "text-lg", lg: "text-3xl" }[size];
   return (
     <div
-      className={cn(
-        "poster relative flex aspect-[2/3] flex-col justify-end overflow-hidden rounded-md p-[8%]",
-        className,
-      )}
+      className={cn("poster relative flex aspect-[2/3] flex-col justify-end overflow-hidden rounded-md p-[8%]", className)}
       style={{ "--h": title.hue } as CSSProperties}
       aria-hidden
     >
-      {title.posterUrl && (
-        <img
-          src={title.posterUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 size-full object-cover"
-        />
-      )}
       {size !== "xs" && (
         <>
-          <span className="absolute left-[8%] top-[6%] text-[10px] uppercase tracking-[0.2em] opacity-60">
-            {title.kind}
-          </span>
+          <span className="absolute left-[8%] top-[6%] text-[10px] uppercase tracking-[0.2em] opacity-60">{title.kind}</span>
           <span className={cn("font-display leading-[1.05]", text)}>{title.name}</span>
           <span className="mt-1 text-[10px] opacity-60">{title.year}</span>
         </>
@@ -47,20 +25,9 @@ export function Poster({
   );
 }
 
-export function Avatar({
-  user,
-  size = 36,
-}: {
-  user: Pick<User, "displayName" | "username"> | undefined;
-  size?: number;
-}) {
+export function Avatar({ user, size = 36 }: { user: Pick<User, "displayName" | "username"> | undefined; size?: number }) {
   const name = user?.displayName ?? "?";
-  const initials = name
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
   let h = 0;
   for (const c of user?.username ?? "") h = (h * 31 + c.charCodeAt(0)) % 360;
   return (
@@ -77,12 +44,7 @@ export function Avatar({
 export function TimeAgo({ iso }: { iso: string }) {
   const date = new Date(iso);
   return (
-    <time
-      dateTime={iso}
-      title={format(date, "PPpp")}
-      suppressHydrationWarning
-      className="text-subtle"
-    >
+    <time dateTime={iso} title={format(date, "PPpp")} suppressHydrationWarning className="text-subtle">
       {formatDistanceToNowStrict(date, { addSuffix: false })}
     </time>
   );
@@ -91,25 +53,13 @@ export function TimeAgo({ iso }: { iso: string }) {
 export function UserLink({ user, className }: { user?: User; className?: string }) {
   if (!user) return <span className={className}>Former member</span>;
   return (
-    <Link
-      to="/u/$username"
-      params={{ username: user.username }}
-      className={cn("font-medium hover:underline", className)}
-    >
+    <Link to="/u/$username" params={{ username: user.username }} className={cn("font-medium hover:underline", className)}>
       {user.displayName}
     </Link>
   );
 }
 
-export function TitleLink({
-  title,
-  className,
-  children,
-}: {
-  title: Title;
-  className?: string;
-  children?: ReactNode;
-}) {
+export function TitleLink({ title, className, children }: { title: Title; className?: string; children?: ReactNode }) {
   return (
     <Link to={titlePath(title)} params={{ slug: title.slug }} className={className}>
       {children ?? title.name}
@@ -117,22 +67,12 @@ export function TitleLink({
   );
 }
 
-export function Spoiler({
-  active,
-  children,
-  label = "Contains spoilers",
-}: {
-  active: boolean;
-  children: ReactNode;
-  label?: string;
-}) {
+export function Spoiler({ active, children, label = "Contains spoilers" }: { active: boolean; children: ReactNode; label?: string }) {
   const [shown, setShown] = useState(false);
   if (!active || shown) return <>{children}</>;
   return (
     <div className="relative">
-      <div className="spoiler-veil" aria-hidden>
-        {children}
-      </div>
+      <div className="spoiler-veil" aria-hidden>{children}</div>
       <div className="absolute inset-0 flex items-center justify-center">
         <button
           onClick={() => setShown(true)}
@@ -149,8 +89,7 @@ export function EpisodeTag({ season, episode }: { season?: number; episode?: num
   if (!season && !episode) return null;
   return (
     <span className="rounded-full border px-2 py-0.5 text-[11px] text-muted-foreground">
-      {season ? `S${season}` : ""}
-      {episode ? `E${episode}` : ""}
+      {season ? `S${season}` : ""}{episode ? `E${episode}` : ""}
     </span>
   );
 }
@@ -170,36 +109,14 @@ export function PageHeader({ title, sub }: { title: string; sub?: ReactNode }) {
 
 export function useCursor<T>(items: T[], pageSize = 10) {
   const [count, setCount] = useState(pageSize);
-  return {
-    visible: items.slice(0, count),
-    hasMore: items.length > count,
-    more: () => setCount((c) => c + pageSize),
-  };
+  return { visible: items.slice(0, count), hasMore: items.length > count, more: () => setCount((c) => c + pageSize) };
 }
 
 export function LoadMore({ show, onClick }: { show: boolean; onClick: () => void }) {
-  const sentinel = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!show || !sentinel.current) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) onClick();
-      },
-      { rootMargin: "320px" },
-    );
-    observer.observe(sentinel.current);
-    return () => observer.disconnect();
-  }, [onClick, show]);
   if (!show) return null;
   return (
-    <div ref={sentinel} className="flex flex-col items-center gap-3 py-6" aria-live="polite">
-      <span className="h-1.5 w-16 animate-pulse rounded-full bg-muted" aria-hidden="true" />
-      <button
-        onClick={onClick}
-        className="rounded-full border px-4 py-2 text-sm text-muted-foreground hover:text-foreground"
-      >
-        Load more
-      </button>
+    <div className="py-6 text-center">
+      <button onClick={onClick} className="rounded-full border px-4 py-2 text-sm text-muted-foreground hover:text-foreground">Load more</button>
     </div>
   );
 }

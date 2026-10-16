@@ -12,10 +12,4 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
-  // TanStack Start's generated client entry is virtual and must be reloaded as a
-  // complete document after route/module changes; stale HMR imports can request
-  // the source-only default-entry/client.tsx path and fail in the preview proxy.
-  vite: {
-    server: { hmr: false },
-  },
 });
