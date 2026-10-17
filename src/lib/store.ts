@@ -16,36 +16,23 @@ function emit() {
   listeners.forEach((l) => l());
 }
 
-export async function refreshStore() {
-  if (typeof window === "undefined") return;
-  try {
-    const response = await fetch("/api/db", { credentials: "same-origin" });
-    const remote = response.ok ? ((await response.json()) as DB) : null;
-    if (!remote || remote.version !== 1) return;
-    remote.recommendations ??= [];
-    remote.discoveryTags ??= [];
-    remote.titleDiscoveryTags ??= [];
-    remote.intentLinks ??= [];
-    state = remote;
-    emit();
-  } catch {
-    // The seed remains available for local previews until the Worker binding is present.
-  }
-}
-
 export function hydrateStore() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
-  void refreshStore();
-}
-
-export function setClerkSession(clerkId: string, localUserId: string) {
-  mutate((db) => {
-    const user = db.users.find((item) => item.id === localUserId && item.clerkId === clerkId);
-    if (!user) throw new Error("Your account is still syncing. Please refresh and try again.");
-    if (user.status === "banned") throw new Error("This account has been banned.");
-    db.sessionUserId = user.id;
-  });
+  void fetch("/api/db", { credentials: "same-origin" })
+    .then((response) => (response.ok ? (response.json() as Promise<DB>) : null))
+    .then((remote) => {
+      if (!remote || remote.version !== 1) return;
+      remote.recommendations ??= [];
+      remote.discoveryTags ??= [];
+      remote.titleDiscoveryTags ??= [];
+      remote.intentLinks ??= [];
+      state = remote;
+      emit();
+    })
+    .catch(() => {
+      // The seed remains available for local previews until the Worker binding is present.
+    });
 }
 
 function persist() {
