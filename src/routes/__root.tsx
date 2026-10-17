@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { Toaster } from "@/components/ui/sonner";
+import { ClerkProvider } from "@clerk/tanstack-react-start";
 import { AuthProvider } from "@/lib/auth";
 import { hydrateStore } from "@/lib/store";
 import { AppShell } from "@/components/AppShell";
@@ -91,7 +92,7 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {children}
+        <ClerkProvider>{children}</ClerkProvider>
         <Scripts />
       </body>
     </html>

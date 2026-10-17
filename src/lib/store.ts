@@ -77,6 +77,12 @@ export function useCurrentUser(): User | null {
   return db.users.find((u) => u.id === db.sessionUserId) ?? null;
 }
 
+export function setSessionUserId(id: string | null) {
+  if (state.sessionUserId === id) return;
+  state = { ...state, sessionUserId: id };
+  emit();
+}
+
 const now = () => new Date().toISOString();
 const uid = () => crypto.randomUUID();
 
