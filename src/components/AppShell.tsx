@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { Compass, Home, Library, Search, User as UserIcon, Layers } from "lucide-react";
+import { Compass, Home, Search, Layers, Menu } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +9,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 import { signOut, useCurrentUser } from "@/lib/store";
 import { Avatar } from "./bits";
 import { SearchBox } from "./SearchBox";
@@ -83,8 +91,49 @@ function AccountArea() {
 const navLink =
   "text-sm text-muted-foreground transition-colors hover:text-foreground [&.active]:text-foreground";
 
+const policyLinks = [
+  { label: "About", href: "/" },
+  { label: "Privacy Policy", href: "/guidelines#privacy" },
+  { label: "Terms", href: "/guidelines#terms" },
+  { label: "Community Guidelines", href: "/guidelines#community-guidelines" },
+  { label: "Contact", href: "mailto:hello@inktella.app" },
+];
+
+function MenuDrawer() {
+  return (
+    <Drawer>
+      <DrawerTrigger asChild>
+        <button
+          type="button"
+          aria-label="Open menu"
+          className="flex flex-col items-center gap-0.5 py-2 text-[11px] text-subtle transition-colors hover:text-foreground"
+        >
+          <Menu className="size-5" strokeWidth={1.6} />
+          Menu
+        </button>
+      </DrawerTrigger>
+      <DrawerContent>
+        <DrawerHeader>
+          <DrawerTitle>Menu</DrawerTitle>
+          <DrawerDescription>Learn more about Inktella and our community.</DrawerDescription>
+        </DrawerHeader>
+        <nav aria-label="Menu links" className="flex flex-col gap-1 px-4 pb-8">
+          {policyLinks.map(({ label, href }) => (
+            <a
+              key={label}
+              href={href}
+              className="rounded-lg px-4 py-3 text-base transition-colors hover:bg-muted"
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
-  const me = useCurrentUser();
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
@@ -108,11 +157,15 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-4 pb-safe md:pb-16">{children}</main>
-      <footer className="mx-auto hidden max-w-5xl gap-5 border-t px-4 py-8 text-xs text-subtle md:flex">
+      <footer className="mx-auto hidden max-w-5xl items-center gap-5 border-t px-4 py-8 text-xs text-subtle md:flex">
         <span>No ratings. Just people sharing what stayed with them.</span>
-        <Link to="/guidelines" className="ml-auto hover:text-foreground">
-          Guidelines, privacy & terms
-        </Link>
+        <nav aria-label="Footer" className="ml-auto flex items-center gap-4">
+          {policyLinks.map(({ label, href }) => (
+            <a key={label} href={href} className="transition-colors hover:text-foreground">
+              {label}
+            </a>
+          ))}
+        </nav>
       </footer>
       <nav
         aria-label="Main"
@@ -136,21 +189,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               {label}
             </Link>
           ))}
-          {me ? (
-            <Link
-              to="/library"
-              className="flex flex-col items-center gap-0.5 py-2 text-[11px] text-subtle [&.active]:text-foreground"
-            >
-              <Library className="size-5" strokeWidth={1.6} /> Profile
-            </Link>
-          ) : (
-            <a
-              href={`${ACCOUNT_URL}/sign-in`}
-              className="flex flex-col items-center gap-0.5 py-2 text-[11px] text-subtle"
-            >
-              <UserIcon className="size-5" strokeWidth={1.6} /> Profile
-            </a>
-          )}
+          <MenuDrawer />
         </div>
       </nav>
     </div>
