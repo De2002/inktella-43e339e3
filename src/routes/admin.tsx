@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { attempt } from "@/lib/auth";
 import {
-  findDuplicate, moderateContent, resolveReport, saveTitle, setTitleStatus, setUserStatus, slugify, useCurrentUser, useDB, type TitleInput,
+  assignDiscoveryTags, findDuplicate, moderateContent, resolveReport, saveDiscoveryTag, saveTitle, setTitleStatus, setUserStatus, slugify, useCurrentUser, useDB, type TitleInput,
 } from "@/lib/store";
 import type { DB, Person, TargetType, Title } from "@/lib/types";
 import { Empty, PageHeader, Poster, TitleLink } from "@/components/bits";
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/admin")({
   component: Admin,
 });
 
-type Tab = "titles" | "reports" | "users" | "history";
+type Tab = "titles" | "discovery" | "reports" | "users" | "history";
 
 function Admin() {
   const me = useCurrentUser();
@@ -38,11 +38,12 @@ function Admin() {
     <div>
       <PageHeader title="Admin" sub="Catalog and community care." />
       <div className="no-scrollbar flex gap-1 overflow-x-auto border-b">
-        {(["titles", "reports", "users", "history"] as Tab[]).map((t) => (
+        {(["titles", "discovery", "reports", "users", "history"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={cn("border-b-2 px-3 py-3 text-sm capitalize", tab === t ? "border-foreground" : "border-transparent text-muted-foreground")}>{t}</button>
         ))}
       </div>
       {tab === "titles" && <Titles />}
+      {tab === "discovery" && <Discovery />}
       {tab === "reports" && <Reports />}
       {tab === "users" && <Users />}
       {tab === "history" && <History />}
@@ -100,6 +101,7 @@ function TitleForm({ initial, id, onDone }: { initial: TitleInput; id?: string; 
         <div className="space-y-1.5"><Label>Poster tone</Label><input type="range" min={0} max={359} value={f.hue} onChange={(e) => set("hue", Number(e.target.value))} className="w-full" /></div>
       </div>
       <div className="space-y-1.5"><Label>Synopsis</Label><Textarea rows={3} value={f.synopsis} onChange={(e) => set("synopsis", e.target.value)} /></div>
+      <DiscoveryAssignment titleId={id} />
       <div className="space-y-1.5"><Label>People (one per line: “director: Name” or “cast: Name as Character”)</Label><Textarea rows={4} value={people} onChange={(e) => setPeople(e.target.value)} /></div>
       <div className="flex flex-wrap items-center gap-3">
         <select value={f.status} onChange={(e) => set("status", e.target.value as Title["status"])} className="h-9 rounded-md border bg-background px-2 text-sm">
@@ -110,6 +112,21 @@ function TitleForm({ initial, id, onDone }: { initial: TitleInput; id?: string; 
       </div>
     </div>
   );
+}
+
+function DiscoveryAssignment({ titleId }: { titleId?: string }) {
+  const db = useDB();
+  const [selected, setSelected] = useState<string[]>(titleId ? db.titleDiscoveryTags.filter((item) => item.titleId === titleId).map((item) => item.tagId) : []);
+  if (!titleId) return <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">Save this title first to assign discovery tags.</p>;
+  return <div className="space-y-2 rounded-lg border p-3"><Label>Internal discovery tags</Label><div className="flex flex-wrap gap-2">{db.discoveryTags.map((tag) => <label key={tag.id} className={cn("cursor-pointer rounded-full border px-3 py-1.5 text-xs", selected.includes(tag.id) && "border-foreground bg-foreground text-background")}><input className="sr-only" type="checkbox" checked={selected.includes(tag.id)} onChange={() => setSelected((items) => items.includes(tag.id) ? items.filter((item) => item !== tag.id) : [...items, tag.id])} />{tag.name}</label>)}</div><Button size="sm" variant="outline" onClick={() => attempt(() => assignDiscoveryTags(titleId, selected), "Tags saved")}>Save tags</Button></div>;
+}
+
+function Discovery() {
+  const db = useDB();
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [aliases, setAliases] = useState("");
+  return <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]"><div><h2 className="font-display text-2xl">Discovery tags</h2><p className="mt-1 text-sm text-muted-foreground">Private story concepts shared across movies and series.</p><ul className="mt-4 divide-y border-y">{db.discoveryTags.map((tag) => <li key={tag.id} className="py-3"><div className="flex items-center justify-between gap-3"><div><p className="font-medium">{tag.name}</p><p className="text-xs text-muted-foreground">{tag.description ?? "No description"} · {db.titleDiscoveryTags.filter((item) => item.tagId === tag.id).length} titles</p>{tag.aliases.length > 0 && <p className="mt-1 text-xs text-subtle">Also: {tag.aliases.join(", ")}</p>}</div></div></li>)}</ul></div><div className="h-fit rounded-xl border p-4"><h3 className="font-medium">Create a tag</h3><div className="mt-3 flex flex-col gap-3"><Input value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Second chances" /><Textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="Optional description" rows={3} /><Input value={aliases} onChange={(event) => setAliases(event.target.value)} placeholder="Aliases, comma separated" /><Button onClick={() => { if (attempt(() => saveDiscoveryTag({ name, description, aliases: aliases.split(",").map((alias) => alias.trim()).filter(Boolean) }), "Tag created")) { setName(""); setDescription(""); setAliases(""); } }}>Create tag</Button></div></div></div>;
 }
 
 function Titles() {

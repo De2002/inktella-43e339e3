@@ -8,6 +8,29 @@ export interface Person {
   character?: string;
 }
 
+export interface DiscoveryTag {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  aliases: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IntentLink {
+  id: string;
+  titleId: string;
+  tagId: string;
+  selectedPhrase: string;
+  startOffset: number;
+  endOffset: number;
+  blurbVersion: string;
+  approvalStatus: "suggested" | "approved" | "rejected";
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Title {
   id: string;
   slug: string;
@@ -135,6 +158,7 @@ export interface User {
   email: string;
   password: string;
   bio?: string;
+  isPro?: boolean;
   role: "user" | "admin";
   status: "active" | "suspended" | "banned";
   createdAt: string;
@@ -164,6 +188,9 @@ export interface DB {
   version: number;
   users: User[];
   titles: Title[];
+  discoveryTags: DiscoveryTag[];
+  titleDiscoveryTags: { titleId: string; tagId: string; createdAt: string }[];
+  intentLinks: IntentLink[];
   posts: Post[];
   reviews: Review[];
   questions: Question[];

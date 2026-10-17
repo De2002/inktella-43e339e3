@@ -160,11 +160,32 @@ const users: DB["users"] = [
 
 const d = (day: number, h = 12) => `2026-10-${String(day).padStart(2, "0")}T${String(h).padStart(2, "0")}:00:00.000Z`;
 
+const discoveryTags = [
+  { id: "tag-former-pilots", name: "Former Pilots", slug: "former-pilots", description: "Stories about pilots who leave the cockpit behind.", aliases: ["ex-pilots", "retired aviators"], createdAt: d(1), updatedAt: d(1) },
+  { id: "tag-family-separation", name: "Family Separation", slug: "family-separation", description: "Stories shaped by distance, absence, or the fear of losing family.", aliases: ["leaving children behind", "separated families"], createdAt: d(1), updatedAt: d(1) },
+  { id: "tag-dangerous-missions", name: "Dangerous Missions", slug: "dangerous-missions", description: "Characters risking everything to complete an impossible mission.", aliases: ["perilous missions", "impossible missions"], createdAt: d(1), updatedAt: d(1) },
+  { id: "tag-crossing-worlds", name: "Crossing Worlds", slug: "crossing-worlds", description: "Stories where a character steps into a strange or hidden world.", aliases: ["other worlds", "parallel worlds"], createdAt: d(1), updatedAt: d(1) },
+];
+
 export function createSeed(): DB {
   return {
     version: 1,
-    users: structuredClone(users),
+    users: structuredClone(users).map((user) => ({ ...user, isPro: user.id === "u-amara" || user.id === "u-admin" })),
     titles: structuredClone(seedTitles),
+    discoveryTags: structuredClone(discoveryTags),
+    titleDiscoveryTags: [
+      { titleId: "t-interstellar", tagId: "tag-former-pilots", createdAt: d(1) },
+      { titleId: "t-interstellar", tagId: "tag-family-separation", createdAt: d(1) },
+      { titleId: "t-interstellar", tagId: "tag-dangerous-missions", createdAt: d(1) },
+      { titleId: "t-arrival", tagId: "tag-dangerous-missions", createdAt: d(1) },
+      { titleId: "t-spirited-away", tagId: "tag-crossing-worlds", createdAt: d(1) },
+      { titleId: "t-eeaao", tagId: "tag-crossing-worlds", createdAt: d(1) },
+      { titleId: "t-dark", tagId: "tag-family-separation", createdAt: d(1) },
+    ],
+    intentLinks: [
+      { id: "intent-interstellar-pilot", titleId: "t-interstellar", tagId: "tag-former-pilots", selectedPhrase: "former pilot", startOffset: 39, endOffset: 51, blurbVersion: "seed", approvalStatus: "approved", createdAt: d(1), updatedAt: d(1) },
+      { id: "intent-interstellar-family", titleId: "t-interstellar", tagId: "tag-family-separation", selectedPhrase: "leaves his children behind", startOffset: 52, endOffset: 78, blurbVersion: "seed", approvalStatus: "approved", createdAt: d(1), updatedAt: d(1) },
+    ],
     posts: [
       { id: "p1", titleId: "t-interstellar", userId: "u-amara", category: "lesson", body: "Love isn't a distraction from the mission. Sometimes it is the mission.", spoiler: false, createdAt: d(15, 9) },
       { id: "p2", titleId: "t-interstellar", userId: "u-leo", category: "quote", body: "Do not go gentle into that good night.", quoteCharacter: "Professor Brand", quoteNote: "Hearing a poem read like a launch countdown never leaves you.", spoiler: false, createdAt: d(14, 18) },

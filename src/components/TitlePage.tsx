@@ -11,6 +11,7 @@ import { Composer } from "./Composer";
 import { PostItem, QuestionCard, ReviewCard } from "./FeedItems";
 import { Recometer } from "./Recometer";
 import { TitleActions } from "./TitleActions";
+import { DiscoveryBlurb } from "./DiscoveryBlurb";
 
 export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: TabKey }) {
   const db = useDB();
@@ -61,7 +62,7 @@ export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: 
           )}
         </div>
       </section>
-      <p className="mt-5 leading-relaxed">{title.synopsis}</p>
+      <DiscoveryBlurb title={title} />
       <div className="mt-4"><TitleActions title={title} /></div>
 
       <Collapsible className="mt-4 border-y">
