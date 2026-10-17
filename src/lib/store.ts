@@ -26,6 +26,7 @@ export function hydrateStore() {
     if (raw) {
       const parsed = JSON.parse(raw) as DB;
       if (parsed.version === 1) {
+        parsed.recommendations ??= [];
         state = parsed;
         emit();
       }
@@ -141,6 +142,7 @@ export function deleteAccount(userId: string) {
     db.collections = db.collections.filter((x) => x.userId !== userId);
     db.savedCollections = db.savedCollections.filter((x) => x.userId !== userId);
     db.library = db.library.filter((x) => x.userId !== userId);
+    db.recommendations = db.recommendations.filter((x) => x.userId !== userId);
     db.sessionUserId = null;
   });
 }
@@ -309,6 +311,16 @@ export function setLibrary(titleId: string, s: "watched" | "want") {
     if (e && e.state === s) db.library = db.library.filter((x) => x !== e && !(x.userId === u.id && x.titleId === titleId));
     else if (e) Object.assign(e, { state: s, updatedAt: now() });
     else db.library.push({ userId: u.id, titleId, state: s, updatedAt: now() });
+  });
+}
+
+/** One vote per person per title; calling again changes the vote. */
+export function setRecommendation(titleId: string, value: "yes" | "no") {
+  const u = me();
+  mutate((db) => {
+    const e = db.recommendations.find((x) => x.userId === u.id && x.titleId === titleId);
+    if (e) Object.assign(e, { value, updatedAt: now() });
+    else db.recommendations.push({ userId: u.id, titleId, value, updatedAt: now() });
   });
 }
 

@@ -114,6 +114,13 @@ export interface Collection {
   updatedAt: string;
 }
 
+export interface RecommendVote {
+  userId: string;
+  titleId: string;
+  value: "yes" | "no";
+  updatedAt: string;
+}
+
 export interface LibraryEntry {
   userId: string;
   titleId: string;
@@ -166,6 +173,7 @@ export interface DB {
   collections: Collection[];
   savedCollections: { userId: string; collectionId: string }[];
   library: LibraryEntry[];
+  recommendations: RecommendVote[];
   reports: Report[];
   modActions: ModAction[];
   slugRedirects: Record<string, string>;

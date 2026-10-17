@@ -9,6 +9,7 @@ import type { Kind, Post, Question, Review } from "@/lib/types";
 import { Empty, LoadMore, Poster, useCursor } from "./bits";
 import { Composer } from "./Composer";
 import { PostItem, QuestionCard, ReviewCard } from "./FeedItems";
+import { Recometer } from "./Recometer";
 import { TitleActions } from "./TitleActions";
 
 export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: TabKey }) {
@@ -78,6 +79,8 @@ export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: 
           </dl>
         </CollapsibleContent>
       </Collapsible>
+
+      <Recometer title={title} />
 
       <nav aria-label="Community" className="no-scrollbar sticky top-14 z-30 -mx-4 mt-2 flex gap-1 overflow-x-auto border-b bg-background/90 px-4 backdrop-blur">
         {TABS.map((t) => (
