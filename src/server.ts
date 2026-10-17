@@ -65,13 +65,18 @@ async function handleCloudflareApi(request: Request, env: CloudflareEnv): Promis
     if (!input.email || !input.displayName || !input.username)
       return json({ error: "Incomplete account profile" }, 400);
     const { attachClerkUser } = await import("./lib/cloudflare");
-    return json({
-      id: await attachClerkUser(env.DB, clerkId, {
-        email: input.email,
-        displayName: input.displayName,
-        username: input.username,
-      }),
-    });
+    try {
+      return json({
+        id: await attachClerkUser(env.DB, clerkId, {
+          email: input.email,
+          displayName: input.displayName,
+          username: input.username,
+        }),
+      });
+    } catch (error) {
+      console.error("[v0] Clerk account sync failed:", error);
+      return json({ error: "Account storage is unavailable" }, 503);
+    }
   }
 
   const mediaMatch = url.pathname.match(/^\/api\/media\/(.+)$/);
