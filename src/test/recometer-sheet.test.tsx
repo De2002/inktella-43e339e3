@@ -12,8 +12,10 @@ window.matchMedia ??= ((q: string) => ({
   addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false,
 })) as typeof window.matchMedia;
 
+let titleIndex = 0;
 function setup() {
-  const title = getDB().titles[0];
+  // Fresh title per test: the in-memory store persists across tests.
+  const title = getDB().titles[titleIndex++];
   render(
     <AuthProvider>
       <TitleActions title={title} />
