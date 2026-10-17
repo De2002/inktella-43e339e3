@@ -2,7 +2,6 @@ import { useState } from "react";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { attempt, useAuth } from "@/lib/auth";
 import { setRecommendation, useCurrentUser, useDB } from "@/lib/store";
 import type { Title } from "@/lib/types";
@@ -40,8 +39,6 @@ export function Recometer({ title }: { title: Title }) {
   const db = useDB();
   const me = useCurrentUser();
   const { requireAuth } = useAuth();
-  const [sheetOpen, setSheetOpen] = useState(false);
-
   const votes = db.recommendations.filter((r) => r.titleId === title.id);
   const yes = votes.filter((v) => v.value === "yes").length;
   const total = votes.length;
@@ -90,14 +87,6 @@ export function Recometer({ title }: { title: Title }) {
         {mine && <span className="text-xs text-muted-foreground">You can change your mind anytime.</span>}
       </div>
 
-      <RecommendSheet title={title} open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </section>
   );
 }
-
-export function useRecommendSheet() {
-  const [open, setOpen] = useState(false);
-  return { open, setOpen };
-}
-
-export { cn };
