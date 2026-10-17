@@ -27,6 +27,8 @@ export interface R2Bucket {
 export interface CloudflareEnv {
   DB?: D1Database;
   MEDIA?: R2Bucket;
+  CLERK_SECRET_KEY?: string;
+  CLERK_WEBHOOK_SIGNING_SECRET?: string;
 }
 
 const emptyState = () => createSeed();

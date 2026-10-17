@@ -2,7 +2,9 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { clerkUserId, readState, writeState, type CloudflareEnv } from "./lib/cloudflare";
+import { readState, writeState, type CloudflareEnv } from "./lib/cloudflare";
+import { verifyToken } from "@clerk/backend";
+import { verifyWebhook } from "@clerk/backend/webhooks";
 import { mediaKey } from "./lib/media";
 
 type ServerEntry = {
@@ -14,6 +16,28 @@ async function handleCloudflareApi(request: Request, env: CloudflareEnv): Promis
   if (!url.pathname.startsWith("/api/")) return null;
   const json = (data: unknown, status = 200) => Response.json(data, { status });
 
+  if (url.pathname === "/api/webhooks/clerk" && env.DB && request.method === "POST") {
+    if (!env.CLERK_WEBHOOK_SIGNING_SECRET) return json({ error: "Webhook is not configured" }, 503);
+    let event;
+    try {
+      event = await verifyWebhook(request, { signingSecret: env.CLERK_WEBHOOK_SIGNING_SECRET });
+    } catch {
+      return json({ error: "Invalid webhook signature" }, 400);
+    }
+    const { attachClerkUser } = await import("./lib/cloudflare");
+    if (event.type === "user.created" || event.type === "user.updated") {
+      const email = event.data.email_addresses[0]?.email_address;
+      if (email) {
+        await attachClerkUser(env.DB, event.data.id, {
+          email,
+          displayName: `${event.data.first_name ?? ""} ${event.data.last_name ?? ""}`.trim() || "Inktella member",
+          username: event.data.username ?? event.data.id.slice(-12),
+        });
+      }
+    }
+    return json({ ok: true });
+  }
+
   if (url.pathname === "/api/db" && env.DB) {
     if (request.method === "GET") return json(await readState(env.DB));
     if (request.method === "PUT") {
@@ -23,8 +47,16 @@ async function handleCloudflareApi(request: Request, env: CloudflareEnv): Promis
   }
 
   if (url.pathname === "/api/auth/sync" && env.DB && request.method === "POST") {
-    const clerkId = clerkUserId(request);
-    if (!clerkId) return json({ error: "Missing Clerk user ID" }, 401);
+    const authorization = request.headers.get("authorization");
+    const token = authorization?.startsWith("Bearer ") ? authorization.slice(7) : null;
+    if (!token || !env.CLERK_SECRET_KEY) return json({ error: "Authentication required" }, 401);
+    let clerkId: string;
+    try {
+      const claims = await verifyToken(token, { secretKey: env.CLERK_SECRET_KEY });
+      clerkId = claims.sub;
+    } catch {
+      return json({ error: "Invalid Clerk session" }, 401);
+    }
     const input = (await request.json()) as {
       email?: string;
       displayName?: string;
