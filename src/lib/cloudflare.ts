@@ -116,15 +116,24 @@ export async function attachClerkUser(
     .first<{ id: string }>();
   if (usernameOwner) username = `${input.username}-${clerkId.slice(-6)}`;
 
-  await db
-    .prepare(
-      `INSERT INTO users (id, clerk_id, username, email, display_name, created_at)
-    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(id) DO UPDATE SET clerk_id=excluded.clerk_id, email=excluded.email, display_name=excluded.display_name, username=excluded.username
-    ON CONFLICT(clerk_id) DO UPDATE SET email=excluded.email, display_name=excluded.display_name, username=excluded.username`,
-    )
-    .bind(id, clerkId, username, input.email, input.displayName)
-    .run();
+  if (existing || byEmail) {
+    await db
+      .prepare(
+        `UPDATE users
+         SET clerk_id = ?, email = ?, display_name = ?, username = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+      )
+      .bind(clerkId, input.email, input.displayName, username, id)
+      .run();
+  } else {
+    await db
+      .prepare(
+        `INSERT INTO users (id, clerk_id, username, email, display_name, created_at)
+         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      )
+      .bind(id, clerkId, username, input.email, input.displayName)
+      .run();
+  }
   return id;
 }
 
