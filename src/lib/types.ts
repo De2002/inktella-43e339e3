@@ -153,6 +153,7 @@ export interface LibraryEntry {
 
 export interface User {
   id: string;
+  clerkId?: string;
   username: string;
   displayName: string;
   email: string;
