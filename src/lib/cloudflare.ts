@@ -96,14 +96,34 @@ export async function attachClerkUser(
     .prepare("SELECT id FROM users WHERE clerk_id = ?")
     .bind(clerkId)
     .first<{ id: string }>();
-  const id = existing?.id ?? crypto.randomUUID();
+
+  // A user may have been created by an earlier webhook before the first page
+  // load. Reuse that row instead of failing on the unique email constraint.
+  const byEmail = existing
+    ? null
+    : await db
+        .prepare("SELECT id FROM users WHERE email = ?")
+        .bind(input.email)
+        .first<{ id: string }>();
+  const id = existing?.id ?? byEmail?.id ?? crypto.randomUUID();
+
+  // Usernames are unique in D1, while Clerk usernames can be changed or
+  // absent. Keep the Clerk id as a deterministic fallback for collisions.
+  let username = input.username;
+  const usernameOwner = await db
+    .prepare("SELECT id FROM users WHERE username = ? AND id != ?")
+    .bind(username, id)
+    .first<{ id: string }>();
+  if (usernameOwner) username = `${input.username}-${clerkId.slice(-6)}`;
+
   await db
     .prepare(
       `INSERT INTO users (id, clerk_id, username, email, display_name, created_at)
     VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(id) DO UPDATE SET clerk_id=excluded.clerk_id, email=excluded.email, display_name=excluded.display_name, username=excluded.username
     ON CONFLICT(clerk_id) DO UPDATE SET email=excluded.email, display_name=excluded.display_name, username=excluded.username`,
     )
-    .bind(id, clerkId, input.username, input.email, input.displayName)
+    .bind(id, clerkId, username, input.email, input.displayName)
     .run();
   return id;
 }
