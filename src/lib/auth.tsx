@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, type ReactNode } from "react";
+import { useAuth as useClerkAuth, useClerk, useUser } from "@clerk/clerk-react";
 import { toast } from "sonner";
-import { getDB } from "./store";
+import { getDB, refreshStore, setClerkSession } from "./store";
 
 type Mode = "signin" | "signup";
 interface AuthCtx {
@@ -12,6 +13,35 @@ interface AuthCtx {
 const Ctx = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { isLoaded, isSignedIn } = useClerkAuth();
+  const { openSignIn, openSignUp } = useClerk();
+  const { user } = useUser();
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !user) return;
+    let cancelled = false;
+    void (async () => {
+      const email = user.primaryEmailAddress?.emailAddress;
+      if (!email || cancelled) return;
+      const displayName = [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || email.split("@")[0];
+      const username = (user.username || email.split("@")[0]).replace(/[^a-zA-Z0-9_]+/g, "_").slice(0, 40);
+      const response = await fetch("/api/auth/sync", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json", "x-clerk-user-id": user.id },
+        body: JSON.stringify({ email, displayName, username }),
+      });
+      if (!response.ok || cancelled) return;
+      const { id } = (await response.json()) as { id?: string };
+      if (!id || cancelled) return;
+      await refreshStore();
+      setClerkSession(user.id, id);
+    })().catch((error) => {
+      console.error("[v0] Clerk account sync failed", error);
+    });
+    return () => { cancelled = true; };
+  }, [isLoaded, isSignedIn, user]);
+
   const run = (fn: () => void) => {
     try {
       fn();
@@ -24,12 +54,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const db = getDB();
     if (db.sessionUserId) return run(action);
     void why;
-    window.location.href = "https://accounts.inktella.com/sign-in";
-  }, []);
+    openSignIn({ redirectUrl: window.location.href });
+  }, [openSignIn]);
 
   const openAuth = useCallback((m: Mode = "signin") => {
-    window.location.href = `https://accounts.inktella.com/${m === "signup" ? "sign-up" : "sign-in"}`;
-  }, []);
+    if (m === "signup") openSignUp({ redirectUrl: window.location.href });
+    else openSignIn({ redirectUrl: window.location.href });
+  }, [openSignIn, openSignUp]);
 
   return <Ctx.Provider value={{ requireAuth, openAuth }}>{children}</Ctx.Provider>;
 }

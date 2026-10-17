@@ -9,6 +9,7 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { ClerkProvider } from "@clerk/clerk-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -105,14 +106,18 @@ function RootComponent() {
     applyTheme();
   }, []);
 
+  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppShell>
-          <Outlet />
-        </AppShell>
+    <ClerkProvider publishableKey={publishableKey}>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppShell>
+            <Outlet />
+          </AppShell>
+        </AuthProvider>
         <Toaster position="top-center" />
-      </AuthProvider>
-    </QueryClientProvider>
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 }
