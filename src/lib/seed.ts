@@ -230,6 +230,7 @@ export function createSeed(): DB {
       { id: "rep1", targetType: "post", targetId: "p8", reporterId: "u-sana", reason: "Possible spoiler without a warning", status: "open", createdAt: d(12, 8) },
     ],
     modActions: [],
+    recommendations: [],
     slugRedirects: {},
     sessionUserId: null,
   };
