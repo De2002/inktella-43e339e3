@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { attempt, useAuth } from "@/lib/auth";
 import { createCollection, setLibrary, toggleInCollection, useCurrentUser, useDB } from "@/lib/store";
 import type { Title } from "@/lib/types";
+import { RecommendSheet } from "./Recometer";
 
 export function TitleActions({ title }: { title: Title }) {
   const db = useDB();
@@ -16,6 +17,13 @@ export function TitleActions({ title }: { title: Title }) {
   const mine = me ? db.collections.filter((c) => c.userId === me.id) : [];
   const [name, setName] = useState("");
   const [open, setOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const markWatched = () => {
+    setLibrary(title.id, "watched");
+    const voted = db.recommendations.some((r) => r.userId === me!.id && r.titleId === title.id);
+    if (state !== "watched" && !voted) setSheetOpen(true);
+  };
 
   const pill = "rounded-full";
   return (
@@ -25,7 +33,7 @@ export function TitleActions({ title }: { title: Title }) {
         variant={state === "watched" ? "default" : "outline"}
         className={pill}
         aria-pressed={state === "watched"}
-        onClick={() => requireAuth(() => setLibrary(title.id, "watched"), "Sign in to keep track of what you've watched.")}
+        onClick={() => requireAuth(markWatched, "Sign in to keep track of what you've watched.")}
       >
         <Check /> Watched
       </Button>
@@ -72,6 +80,7 @@ export function TitleActions({ title }: { title: Title }) {
           </form>
         </PopoverContent>
       </Popover>
+      <RecommendSheet title={title} open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </div>
   );
 }
