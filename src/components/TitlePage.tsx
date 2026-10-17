@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -12,10 +12,12 @@ import { PostItem, QuestionCard, ReviewCard } from "./FeedItems";
 import { Recometer } from "./Recometer";
 import { TitleActions } from "./TitleActions";
 import { DiscoveryBlurb } from "./DiscoveryBlurb";
+import { GenreSheet } from "./GenreSheet";
 
 export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: TabKey }) {
   const db = useDB();
   const navigate = useNavigate();
+  const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const title = db.titles.find((t) => t.slug === slug && t.kind === kind);
   const redirectTo = !title ? db.slugRedirects[slug] : undefined;
 
@@ -54,7 +56,20 @@ export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: 
         <div className="min-w-0">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{word} · {title.year}</p>
           <h1 className="mt-1 text-4xl leading-[1.02] md:text-5xl">{title.name}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{title.genres.join(" · ")}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+            {title.genres.map((genre, index) => (
+              <span key={genre} className="inline-flex items-center gap-2">
+                {index > 0 && <span aria-hidden>·</span>}
+                <button
+                  type="button"
+                  className="border-b border-transparent transition-colors hover:border-current hover:text-foreground"
+                  onClick={() => setSelectedGenre(genre)}
+                >
+                  {genre}
+                </button>
+              </span>
+            ))}
+          </div>
           {directors.length > 0 && (
             <p className="mt-1 text-sm text-muted-foreground">
               {kind === "movie" ? "Directed by" : "Created by"} {Array.from(new Set(directors.map((d) => d.name))).join(", ")}
@@ -63,6 +78,7 @@ export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: 
         </div>
       </section>
       <DiscoveryBlurb title={title} />
+      <GenreSheet genre={selectedGenre ?? ""} open={selectedGenre !== null} onClose={() => setSelectedGenre(null)} />
       <div className="mt-4"><TitleActions title={title} /></div>
 
       <Collapsible className="mt-4 border-y">
