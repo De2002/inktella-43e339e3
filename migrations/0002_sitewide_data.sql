@@ -1,8 +1,3 @@
-PRAGMA foreign_keys = ON;
-
--- Sitewide relational tables. app_state remains the canonical JSON snapshot used by
--- the existing UI; these tables provide durable, queryable D1 records and Clerk identity links.
-
 CREATE TABLE IF NOT EXISTS titles (
   id TEXT PRIMARY KEY,
   slug TEXT NOT NULL UNIQUE,
