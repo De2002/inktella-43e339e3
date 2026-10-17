@@ -12,10 +12,15 @@ window.matchMedia ??= ((q: string) => ({
   addEventListener: () => {}, removeEventListener: () => {}, dispatchEvent: () => false,
 })) as typeof window.matchMedia;
 
-let titleIndex = 0;
 function setup() {
-  // Fresh title per test: the in-memory store persists across tests.
-  const title = getDB().titles[titleIndex++];
+  // Fresh, not-yet-watched title per test: the in-memory store persists across tests.
+  const db = getDB();
+  const me = db.users.find((u) => u.id === db.sessionUserId)!;
+  const title = db.titles.find(
+    (t) =>
+      !db.library.some((l) => l.userId === me.id && l.titleId === t.id) &&
+      !db.recommendations.some((r) => r.userId === me.id && r.titleId === t.id),
+  )!;
   render(
     <AuthProvider>
       <TitleActions title={title} />
