@@ -27,6 +27,9 @@ export function hydrateStore() {
       const parsed = JSON.parse(raw) as DB;
       if (parsed.version === 1) {
         parsed.recommendations ??= [];
+        parsed.discoveryTags ??= [];
+        parsed.titleDiscoveryTags ??= [];
+        parsed.intentLinks ??= [];
         state = parsed;
         emit();
       }
@@ -420,6 +423,42 @@ export function saveTitle(input: TitleInput, id?: string) {
     }
   });
   return slug;
+}
+
+export function saveDiscoveryTag(input: { name: string; description?: string; aliases?: string[] }, id?: string) {
+  const a = requireAdmin();
+  const name = clean(input.name, 80, "Tag name");
+  if (!name) throw new Error("Tag name is required.");
+  const slug = slugify(name);
+  if (state.discoveryTags.some((tag) => tag.slug === slug && tag.id !== id)) throw new Error("That discovery tag already exists.");
+  const tagId = id ?? uid();
+  mutate((db) => {
+    const existing = db.discoveryTags.find((tag) => tag.id === id);
+    if (existing) Object.assign(existing, { name, slug, description: clean(input.description, 240) || undefined, aliases: input.aliases ?? [], updatedAt: now() });
+    else db.discoveryTags.push({ id: tagId, name, slug, description: clean(input.description, 240) || undefined, aliases: input.aliases ?? [], createdAt: now(), updatedAt: now() });
+    log(db, a.id, id ? "discovery-tag.update" : "discovery-tag.create", "discovery-tag", tagId, name);
+  });
+  return tagId;
+}
+
+export function assignDiscoveryTags(titleId: string, tagIds: string[]) {
+  const a = requireAdmin();
+  mutate((db) => {
+    db.titleDiscoveryTags = db.titleDiscoveryTags.filter((item) => item.titleId !== titleId);
+    for (const tagId of [...new Set(tagIds)]) if (db.discoveryTags.some((tag) => tag.id === tagId)) db.titleDiscoveryTags.push({ titleId, tagId, createdAt: now() });
+    log(db, a.id, "discovery-tag.assign", "title", titleId);
+  });
+}
+
+export function approveIntentLink(id: string, approvalStatus: "approved" | "rejected") {
+  const a = requireAdmin();
+  mutate((db) => {
+    const link = db.intentLinks.find((item) => item.id === id);
+    if (!link) return;
+    link.approvalStatus = approvalStatus;
+    link.updatedAt = now();
+    log(db, a.id, `intent-link.${approvalStatus}`, "intent-link", id);
+  });
 }
 
 export function setTitleStatus(id: string, status: Title["status"]) {
