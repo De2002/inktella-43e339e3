@@ -159,6 +159,7 @@ export interface User {
   email: string;
   password: string;
   bio?: string;
+  favoriteTitleIds?: string[];
   isPro?: boolean;
   role: "user" | "admin";
   status: "active" | "suspended" | "banned";

@@ -158,9 +158,10 @@ export function signOut() {
 
 export function updateProfile(
   userId: string,
-  p: { displayName: string; username: string; bio?: string },
+  p: { displayName: string; username: string; bio?: string; favoriteTitleIds?: string[] },
 ) {
   const username = slugify(p.username).replace(/-/g, "_");
+  const favoriteTitleIds = [...new Set((p.favoriteTitleIds ?? []).filter(Boolean))].slice(0, 4);
   if (!username) throw new Error("Username can't be empty.");
   if (state.users.some((u) => u.username === username && u.id !== userId))
     throw new Error("That username is taken.");
@@ -169,6 +170,7 @@ export function updateProfile(
     u.displayName = p.displayName.trim() || username;
     u.username = username;
     u.bio = p.bio?.trim() || undefined;
+    u.favoriteTitleIds = favoriteTitleIds;
   });
 }
 
