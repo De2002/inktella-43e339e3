@@ -15,6 +15,14 @@ interface AuthCtx {
 const Ctx = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  if (!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY) {
+    const unavailable = () => toast.error("Sign-in isn't configured for this preview yet.");
+    return <Ctx.Provider value={{ requireAuth: unavailable, openAuth: unavailable, signOut: unavailable }}>{children}</Ctx.Provider>;
+  }
+  return <ConnectedAuthProvider>{children}</ConnectedAuthProvider>;
+}
+
+function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, getToken } = useClerkAuth();
   const { user } = useUser();
   const clerk = useClerk();

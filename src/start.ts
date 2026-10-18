@@ -25,9 +25,14 @@ const csrfMiddleware = createCsrfMiddleware({
   filter: (ctx) => ctx.handlerType === "serverFn",
 });
 
+// Missing preview credentials must not block public browsing or enable fake auth.
+const optionalClerkMiddleware = createMiddleware().server(async (options) => {
+  const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || process.env['CLERK_PUBLISHABLE_KEY'];
+  const secretKey = process.env['CLERK_SECRET_KEY'];
+  if (!publishableKey || !secretKey) return options.next();
+  return clerkMiddleware({ publishableKey, secretKey }).options.server(options);
+});
+
 export const startInstance = createStart(() => ({
-  requestMiddleware: [errorMiddleware, clerkMiddleware(() => ({
-    publishableKey: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || process.env['CLERK_PUBLISHABLE_KEY'],
-    secretKey: process.env['CLERK_SECRET_KEY'],
-  })), csrfMiddleware],
+  requestMiddleware: [errorMiddleware, optionalClerkMiddleware, csrfMiddleware],
 }));

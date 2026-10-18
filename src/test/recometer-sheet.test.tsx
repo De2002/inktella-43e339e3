@@ -1,8 +1,14 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider } from "@/lib/auth";
 import { getDB, signIn, signOut } from "@/lib/store";
 import { TitleActions } from "@/components/TitleActions";
+
+// This suite exercises the sheet, not Clerk's hosted sign-in UI.
+vi.mock("@/lib/auth", () => ({
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+  useAuth: () => ({ requireAuth: (action: () => void) => action() }),
+}));
 
 // Drawer needs these in jsdom.
 window.HTMLElement.prototype.scrollIntoView = () => {};
@@ -15,12 +21,14 @@ window.matchMedia ??= ((q: string) => ({
 function setup() {
   // Fresh, not-yet-watched title per test: the in-memory store persists across tests.
   const db = getDB();
-  const me = db.users.find((u) => u.id === db.sessionUserId)!;
+  const me = db.users.find((u) => u.id === db.sessionUserId);
+  if (!me) throw new Error("Missing test account");
   const title = db.titles.find(
     (t) =>
       !db.library.some((l) => l.userId === me.id && l.titleId === t.id) &&
       !db.recommendations.some((r) => r.userId === me.id && r.titleId === t.id),
-  )!;
+  );
+  if (!title) throw new Error("Missing fresh test title");
   render(
     <AuthProvider>
       <TitleActions title={title} />
@@ -41,7 +49,8 @@ describe("Watched → recommend sheet", () => {
     const title = setup();
     fireEvent.click(screen.getByRole("button", { name: /Watched/ }));
     const db = getDB();
-    const me = db.users.find((u) => u.id === db.sessionUserId)!;
+    const me = db.users.find((u) => u.id === db.sessionUserId);
+    if (!me) throw new Error("Missing test account");
     expect(db.library.some((l) => l.userId === me.id && l.titleId === title.id && l.state === "watched")).toBe(true);
     expect(await screen.findByText("Would you recommend it?")).toBeTruthy();
   });
@@ -51,7 +60,8 @@ describe("Watched → recommend sheet", () => {
     fireEvent.click(screen.getByRole("button", { name: /Watched/ }));
     fireEvent.click(await screen.findByRole("button", { name: /Yes, I'd recommend it/ }));
     const db = getDB();
-    const me = db.users.find((u) => u.id === db.sessionUserId)!;
+    const me = db.users.find((u) => u.id === db.sessionUserId);
+    if (!me) throw new Error("Missing test account");
     expect(db.recommendations.some((r) => r.userId === me.id && r.titleId === title.id && r.value === "yes")).toBe(true);
   });
 

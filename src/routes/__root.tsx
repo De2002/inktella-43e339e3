@@ -92,7 +92,9 @@ function RootShell({ children }: { children: ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || undefined}>{children}</ClerkProvider>
+        {import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+          ? <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>{children}</ClerkProvider>
+          : children}
         <Scripts />
       </body>
     </html>
