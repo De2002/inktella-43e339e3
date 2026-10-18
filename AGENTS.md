@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Architecture rules
-- All app data flows through `src/lib/store.ts` actions (local browser store for now); components never mutate data directly, so a real backend (D1/API) can replace the store without UI changes.
+- All app data flows through `src/lib/store.ts` actions; components never mutate data directly, so persistence and account hydration can change without UI rewrites.
 - Movie/series pages share one `TitlePage` + reusable `Composer` driven by `src/lib/tabs.ts`; add tabs there, not in components.
 - Catalog search lives in `src/lib/search.ts` (normalized prefix + fuzzy ranking) so the ranking can be mirrored server-side later.
 - Clerk is the only live authentication authority; sync verified profiles from Clerk into D1 and install returned users through store actions so a missing snapshot row cannot hide a signed-in account.
