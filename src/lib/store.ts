@@ -156,9 +156,19 @@ export function signOut() {
   });
 }
 
+export function recordTrailVisit(userId: string, titleId: string) {
+  mutate((db) => {
+    const visitedAt = now();
+    db.trail = [
+      { userId, titleId, visitedAt },
+      ...db.trail.filter((entry) => !(entry.userId === userId && entry.titleId === titleId)),
+    ];
+  });
+}
+
 export function updateProfile(
   userId: string,
-  p: { displayName: string; username: string; bio?: string; favoriteTitleIds?: string[] },
+  p: { displayName: string; username: string; bio?: string; favoriteTitleIds?: string[]; showTrail?: boolean }, 
 ) {
   const username = slugify(p.username).replace(/-/g, "_");
   const favoriteTitleIds = [...new Set((p.favoriteTitleIds ?? []).filter(Boolean))].slice(0, 4);
@@ -171,6 +181,7 @@ export function updateProfile(
     u.username = username;
     u.bio = p.bio?.trim() || undefined;
     u.favoriteTitleIds = favoriteTitleIds;
+    u.showTrail = p.showTrail ?? true;
   });
 }
 
@@ -186,6 +197,7 @@ export function deleteAccount(userId: string) {
     db.collections = db.collections.filter((x) => x.userId !== userId);
     db.savedCollections = db.savedCollections.filter((x) => x.userId !== userId);
     db.library = db.library.filter((x) => x.userId !== userId);
+    db.trail = db.trail.filter((x) => x.userId !== userId);
     db.recommendations = db.recommendations.filter((x) => x.userId !== userId);
     db.sessionUserId = null;
   });

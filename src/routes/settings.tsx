@@ -34,6 +34,7 @@ function Settings() {
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
   const [favoriteTitleIds, setFavoriteTitleIds] = useState<string[]>(["", "", "", ""]);
+  const [showTrail, setShowTrail] = useState(true);
   const db = useDB();
   useEffect(() => setTheme(getThemePref()), []);
   useEffect(() => {
@@ -42,6 +43,7 @@ function Settings() {
       setUsername(me.username);
       setBio(me.bio ?? "");
       setFavoriteTitleIds([...(me.favoriteTitleIds ?? []), "", "", ""].slice(0, 4));
+    setShowTrail(me.showTrail !== false);
     }
   }, [me?.id]);
 
@@ -60,7 +62,7 @@ function Settings() {
         <p className="py-8 text-muted-foreground"><button className="underline" onClick={() => openAuth()}>Sign in</button> to edit your profile.</p>
       ) : (
         <>
-          <form className="space-y-4 border-b py-8" onSubmit={(e) => { e.preventDefault(); attempt(() => updateProfile(me.id, { displayName: name, username, bio, favoriteTitleIds }), "Profile saved"); }}>
+          <form className="space-y-4 border-b py-8" onSubmit={(e) => { e.preventDefault(); attempt(() => updateProfile(me.id, { displayName: name, username, bio, favoriteTitleIds, showTrail }), "Profile saved"); }}>
             <h2 className="text-2xl">Profile</h2>
             <div className="space-y-1.5"><Label htmlFor="s-name">Display name</Label><Input id="s-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></div>
             <div className="space-y-1.5"><Label htmlFor="s-user">Username</Label><Input id="s-user" value={username} onChange={(e) => setUsername(e.target.value)} maxLength={30} /></div>
@@ -68,7 +70,11 @@ function Settings() {
             <fieldset className="space-y-3 pt-2">
               <legend className="font-display text-2xl">Favourite Films</legend>
               <p className="text-sm text-muted-foreground">Choose up to four titles from Inktella. Leave any slot blank to show fewer.</p>
-              <div className="grid grid-cols-2 gap-3">
+              <label className="flex items-center gap-3 text-sm text-muted-foreground">
+    <input type="checkbox" checked={showTrail} onChange={(e) => setShowTrail(e.target.checked)} />
+    Show my recent viewing trail on my profile
+  </label>
+  <div className="grid grid-cols-2 gap-3">
                 {favoriteTitleIds.map((titleId, index) => (
                   <div key={index} className="space-y-1.5">
                     <Label htmlFor={`s-favourite-${index}`}>Slot {index + 1}</Label>

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { titlePath, useDB } from "@/lib/store";
+import { recordTrailVisit, titlePath, useDB } from "@/lib/store";
 import { TABS, type TabKey } from "@/lib/tabs";
 import type { Kind, Post, Question, Review } from "@/lib/types";
 import { Empty, LoadMore, Poster, useCursor } from "./bits";
@@ -20,6 +20,10 @@ export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: 
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const title = db.titles.find((t) => t.slug === slug && t.kind === kind);
   const redirectTo = !title ? db.slugRedirects[slug] : undefined;
+
+  useEffect(() => {
+    if (title && title.status === "published" && db.sessionUserId) recordTrailVisit(db.sessionUserId, title.id);
+  }, [title?.id, title?.status, db.sessionUserId]);
 
   useEffect(() => {
     if (redirectTo) {
