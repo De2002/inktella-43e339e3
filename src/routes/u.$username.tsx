@@ -58,12 +58,12 @@ function Profile() {
     <div className="mx-auto max-w-2xl pb-10">
       <div className="relative isolate -mx-4 overflow-hidden px-4 pb-1 sm:-mx-6 sm:px-6">
         <div
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[27rem] bg-cover bg-center opacity-80"
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[30rem] bg-cover bg-center opacity-50 mix-blend-normal dark:opacity-80 dark:mix-blend-normal"
           style={{ backgroundImage: "url('/profile-hero.png')" }}
           aria-hidden="true"
         />
         <div
-          className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,rgba(18,18,20,0.08)_0%,rgba(18,18,20,0.28)_38%,hsl(var(--background))_88%,hsl(var(--background))_100%)]"
+          className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,color-mix(in_oklab,var(--background)_4%,transparent)_0%,color-mix(in_oklab,var(--background)_18%,transparent)_42%,var(--background)_82%,var(--background)_100%)] dark:bg-[linear-gradient(to_bottom,rgba(11,16,32,0.08)_0%,rgba(11,16,32,0.26)_42%,#0b1020_82%,#0b1020_100%)]"
           aria-hidden="true"
         />
 
