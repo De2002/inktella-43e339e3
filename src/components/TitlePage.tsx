@@ -7,7 +7,6 @@ import { titlePath, useDB } from "@/lib/store";
 import { TABS, type TabKey } from "@/lib/tabs";
 import type { Kind, Post, Question, Review } from "@/lib/types";
 import { Empty, LoadMore, Poster, useCursor } from "./bits";
-import { Composer } from "./Composer";
 import { PostItem, QuestionCard, ReviewCard } from "./FeedItems";
 import { Recometer } from "./Recometer";
 import { TitleActions } from "./TitleActions";
@@ -47,7 +46,23 @@ export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: 
 
   const directors = title.people.filter((p) => p.role === "director" || p.role === "creator");
   const cast = title.people.filter((p) => p.role === "cast");
-  const word = kind === "movie" ? "Movie" : "Series";
+  const word = kind === "movie" ? "movie" : "series";
+  const count = items.length;
+  const countLabel = `${count} ${count === 1 ? "contribution" : "contributions"}`;
+  const editorialDescription =
+    cfg.key === "lessons"
+      ? count ? `${count} ${count === 1 ? "lesson" : "lessons"} viewers learned from ${title.name}.` : `Every story teaches us something. What did ${title.name} teach you?`
+      : cfg.key === "quotes"
+        ? count ? `${count} memorable ${count === 1 ? "quote" : "quotes"} from ${title.name} worth revisiting.` : `Which words from ${title.name} stayed with you?`
+        : cfg.key === "reviews"
+          ? count ? `See what ${count} ${count === 1 ? "viewer thinks" : "viewers think"} about ${title.name}.` : `What did you think of ${title.name}?`
+          : cfg.key === "questions"
+            ? count ? `${count} ${count === 1 ? "question" : "questions"} viewers are asking about ${title.name}.` : `What would you like to know about ${title.name}?`
+            : cfg.key === "moments"
+              ? count ? `${count} ${count === 1 ? "moment" : "moments"} from ${title.name} that viewers can't forget.` : `Which moment from ${title.name} stayed with you?`
+              : cfg.key === "director"
+                ? `What viewers would tell the creators of ${title.name} if they had the chance.`
+                : count ? `${countLabel} about the trailer for ${title.name}.` : `What did you think of the trailer for ${title.name}?`;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -128,7 +143,7 @@ export function TitlePage({ kind, slug, tab }: { kind: Kind; slug: string; tab: 
         )
       )}
 
-      <Composer title={title} tab={cfg} />
+      <p className="mt-5 text-base leading-relaxed text-muted-foreground">{editorialDescription}</p>
 
       <div>
         {visible.length === 0 && <Empty>{cfg.empty(kind)}</Empty>}

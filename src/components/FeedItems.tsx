@@ -27,7 +27,8 @@ export function PostItem({ post, showTitle }: { post: Post; showTitle?: boolean 
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(post.body);
   const replies = db.replies.filter((r) => r.targetType === "post" && r.targetId === post.id && !r.removed).length;
-  const path = title ? `/${title.kind}/${title.slug}?tab=${post.category === "trailer_thought" ? "trailer" : post.category + "s"}` : "/";
+  const tab = post.category === "trailer_thought" ? "trailer" : post.category === "director_note" ? "director" : post.category + "s";
+  const path = title ? `/${title.kind}/${title.slug}?tab=${tab}` : "/";
 
   return (
     <article className="flex gap-3 border-b py-5">
