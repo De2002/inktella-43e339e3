@@ -50,7 +50,7 @@ export interface Title {
   createdAt: string;
 }
 
-export type PostCategory = "lesson" | "quote" | "moment" | "trailer_thought";
+export type PostCategory = "lesson" | "quote" | "moment" | "trailer_thought" | "director_note";
 
 export interface Post {
   id: string;
