@@ -8,6 +8,7 @@ import { TitleActions } from "@/components/TitleActions";
 vi.mock("@/lib/auth", () => ({
   AuthProvider: ({ children }: { children: React.ReactNode }) => children,
   useAuth: () => ({ requireAuth: (action: () => void) => action() }),
+  attempt: (action: () => void) => { action(); return true; },
 }));
 
 // Drawer needs these in jsdom.

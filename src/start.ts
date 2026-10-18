@@ -30,7 +30,9 @@ const optionalClerkMiddleware = createMiddleware().server(async (options) => {
   const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || process.env['CLERK_PUBLISHABLE_KEY'];
   const secretKey = process.env['CLERK_SECRET_KEY'];
   if (!publishableKey || !secretKey) return options.next();
-  return clerkMiddleware({ publishableKey, secretKey }).options.server(options);
+  const handler = clerkMiddleware({ publishableKey, secretKey }).options.server;
+  if (!handler) return options.next();
+  return handler(options);
 });
 
 export const startInstance = createStart(() => ({
