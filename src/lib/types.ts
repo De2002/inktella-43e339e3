@@ -151,6 +151,12 @@ export interface LibraryEntry {
   updatedAt: string;
 }
 
+export interface TrailEntry {
+  userId: string;
+  titleId: string;
+  visitedAt: string;
+}
+
 export interface User {
   id: string;
   clerkId?: string;
@@ -160,6 +166,7 @@ export interface User {
   password: string;
   bio?: string;
   favoriteTitleIds?: string[];
+  showTrail?: boolean;
   isPro?: boolean;
   role: "user" | "admin";
   status: "active" | "suspended" | "banned";
@@ -202,6 +209,7 @@ export interface DB {
   collections: Collection[];
   savedCollections: { userId: string; collectionId: string }[];
   library: LibraryEntry[];
+  trail: TrailEntry[];
   recommendations: RecommendVote[];
   reports: Report[];
   modActions: ModAction[];

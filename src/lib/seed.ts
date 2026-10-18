@@ -247,6 +247,7 @@ export function createSeed(): DB {
       { userId: "u-amara", titleId: "t-interstellar", state: "watched", updatedAt: d(12) },
       { userId: "u-amara", titleId: "t-dark", state: "want", updatedAt: d(12) },
     ],
+    trail: [],
     reports: [
       { id: "rep1", targetType: "post", targetId: "p8", reporterId: "u-sana", reason: "Possible spoiler without a warning", status: "open", createdAt: d(12, 8) },
     ],

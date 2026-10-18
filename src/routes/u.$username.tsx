@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronDown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDB } from "@/lib/store";
@@ -35,6 +35,15 @@ function Profile() {
   ].sort((a, b) => b.at.localeCompare(a.at));
   const cols = db.collections.filter((c) => c.userId === u.id);
   const watched = db.library.filter((l) => l.userId === u.id && l.state === "watched").map((l) => db.titles.find((t) => t.id === l.titleId)).filter(Boolean);
+  const trail = useMemo(() => {
+    if (u.showTrail === false) return [];
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return db.trail
+      .filter((entry) => entry.userId === u.id && Date.parse(entry.visitedAt) >= cutoff)
+      .sort((a, b) => b.visitedAt.localeCompare(a.visitedAt))
+      .map((entry) => db.titles.find((title) => title.id === entry.titleId))
+      .filter(Boolean);
+  }, [db.trail, db.titles, u.id, u.showTrail]);
 
   const [aiOpen, setAiOpen] = useState(false);
   const watchedCount = watched.length;
@@ -86,6 +95,20 @@ function Profile() {
           </div>
         </section>
       ) : null}
+
+      {trail.length > 0 && (
+        <section className="mt-7 border-b pb-7" aria-labelledby="trail-heading">
+          <h2 id="trail-heading" className="mb-3 font-display text-lg text-primary">The Trail</h2>
+          <div className="flex snap-x gap-2.5 overflow-x-auto overscroll-x-contain pb-1 sm:gap-4" aria-label="Recently visited titles">
+            {trail.map((title) => title && (
+              <TitleLink key={title.id} title={title} className="group block w-[calc((100vw-5rem)/4)] min-w-[calc((100vw-5rem)/4)] snap-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:w-[calc((100%-3rem)/4)] sm:min-w-[calc((100%-3rem)/4)]">
+                <Poster title={title} size="xs" className="rounded-lg shadow-sm transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-md" />
+                <span className="sr-only">{title.name}</span>
+              </TitleLink>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mt-6 border-b pb-5" aria-label="AI profile description">
         <button type="button" onClick={() => setAiOpen((open) => !open)} aria-expanded={aiOpen} className="flex w-full items-start gap-3 text-left">
