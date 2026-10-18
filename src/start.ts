@@ -26,5 +26,8 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
-  requestMiddleware: [errorMiddleware, clerkMiddleware(), csrfMiddleware],
+  requestMiddleware: [errorMiddleware, clerkMiddleware(() => ({
+    publishableKey: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || process.env['CLERK_PUBLISHABLE_KEY'],
+    secretKey: process.env['CLERK_SECRET_KEY'],
+  })), csrfMiddleware],
 }));

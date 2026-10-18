@@ -31,6 +31,27 @@ export interface CloudflareEnv {
   CLERK_WEBHOOK_SIGNING_SECRET?: string;
 }
 
+/** Nitro passes bindings on the request; direct Wrangler calls pass them as arg 2. */
+export function cloudflareEnv(request: Request, fallback?: unknown): CloudflareEnv {
+  const runtime = (request as Request & { runtime?: { cloudflare?: { env?: CloudflareEnv } } }).runtime;
+  return runtime?.cloudflare?.env ?? (fallback as CloudflareEnv | undefined) ?? {};
+}
+
+export async function readAccount(db: D1Database, id: string): Promise<User | null> {
+  const row = await db.prepare(
+    "SELECT id, clerk_id, username, email, display_name, role, status, is_pro, bio, created_at FROM users WHERE id = ?",
+  ).bind(id).first<{
+    id: string; clerk_id: string; username: string; email: string; display_name: string;
+    role: User["role"]; status: User["status"]; is_pro: number; bio: string | null; created_at: string;
+  }>();
+  if (!row) return null;
+  return {
+    id: row.id, clerkId: row.clerk_id, username: row.username, email: row.email,
+    displayName: row.display_name, role: row.role, status: row.status, isPro: Boolean(row.is_pro),
+    bio: row.bio ?? undefined, createdAt: row.created_at, password: "",
+  };
+}
+
 const emptyState = () => createSeed();
 
 export async function readState(db: D1Database): Promise<DB> {
@@ -137,6 +158,3 @@ export async function attachClerkUser(
   return id;
 }
 
-export function clerkUserId(request: Request) {
-  return request.headers.get("x-clerk-user-id") ?? request.headers.get("x-user-id");
-}

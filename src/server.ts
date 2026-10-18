@@ -2,8 +2,8 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { readState, writeState, type CloudflareEnv } from "./lib/cloudflare";
-import { verifyToken } from "@clerk/backend";
+import { readState, writeState, cloudflareEnv, type CloudflareEnv } from "./lib/cloudflare";
+import { createClerkClient, verifyToken } from "@clerk/backend";
 import { verifyWebhook } from "@clerk/backend/webhooks";
 import { mediaKey } from "./lib/media";
 
@@ -11,12 +11,13 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
-async function handleCloudflareApi(request: Request, env: CloudflareEnv): Promise<Response | null> {
+export async function handleCloudflareApi(request: Request, env: CloudflareEnv): Promise<Response | null> {
   const url = new URL(request.url);
   if (!url.pathname.startsWith("/api/")) return null;
   const json = (data: unknown, status = 200) => Response.json(data, { status });
 
-  if (url.pathname === "/api/webhooks/clerk" && env.DB && request.method === "POST") {
+  if ((url.pathname === "/api/webhooks/clerk" || url.pathname === "/api/public/webhooks/clerk") && request.method === "POST") {
+    if (!env.DB) return json({ error: "Cloudflare D1 binding DB is missing" }, 503);
     if (!env.CLERK_WEBHOOK_SIGNING_SECRET) return json({ error: "Webhook is not configured" }, 503);
     let event;
     try {
@@ -26,7 +27,7 @@ async function handleCloudflareApi(request: Request, env: CloudflareEnv): Promis
     }
     const { attachClerkUser } = await import("./lib/cloudflare");
     if (event.type === "user.created" || event.type === "user.updated") {
-      const email = event.data.email_addresses[0]?.email_address;
+      const email = event.data.email_addresses.find((address) => address.id === event.data.primary_email_address_id && address.verification?.status === "verified")?.email_address;
       if (email) {
         await attachClerkUser(env.DB, event.data.id, {
           email,
@@ -46,36 +47,37 @@ async function handleCloudflareApi(request: Request, env: CloudflareEnv): Promis
     }
   }
 
-  if (url.pathname === "/api/auth/sync" && env.DB && request.method === "POST") {
+  if (url.pathname === "/api/auth/sync" && request.method === "POST") {
+    if (!env.DB) return json({ error: "Your account cannot connect: Cloudflare D1 binding DB is missing." }, 503);
     const authorization = request.headers.get("authorization");
     const token = authorization?.startsWith("Bearer ") ? authorization.slice(7) : null;
-    if (!token || !env.CLERK_SECRET_KEY) return json({ error: "Authentication required" }, 401);
+    if (!env.CLERK_SECRET_KEY) return json({ error: "Sign-in is not configured: CLERK_SECRET_KEY is missing from this Worker." }, 503);
+    if (!token) return json({ error: "Authentication required" }, 401);
     let clerkId: string;
     try {
-      const claims = await verifyToken(token, { secretKey: env.CLERK_SECRET_KEY });
+      const claims = await verifyToken(token, { secretKey: env.CLERK_SECRET_KEY, authorizedParties: [url.origin] });
       clerkId = claims.sub;
     } catch {
       return json({ error: "Invalid Clerk session" }, 401);
     }
-    const input = (await request.json()) as {
-      email?: string;
-      displayName?: string;
-      username?: string;
-    };
-    if (!input.email || !input.displayName || !input.username)
-      return json({ error: "Incomplete account profile" }, 400);
-    const { attachClerkUser } = await import("./lib/cloudflare");
+    // Identity comes from Clerk, never from a browser-supplied email or name.
+    const { attachClerkUser, readAccount } = await import("./lib/cloudflare");
     try {
-      return json({
-        id: await attachClerkUser(env.DB, clerkId, {
-          email: input.email,
-          displayName: input.displayName,
-          username: input.username,
-        }),
+      const profile = await createClerkClient({ secretKey: env.CLERK_SECRET_KEY }).users.getUser(clerkId);
+      const email = profile.emailAddresses.find((address) => address.id === profile.primaryEmailAddressId && address.verification?.status === "verified")?.emailAddress;
+      if (!email) return json({ error: "Please verify your primary email address in Clerk before continuing." }, 422);
+      const id = await attachClerkUser(env.DB, clerkId, {
+        email,
+        displayName: `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() || profile.username || "Inktella member",
+        username: profile.username ?? profile.id.slice(-12),
       });
+      const account = await readAccount(env.DB, id);
+      if (!account) throw new Error("Synced account row missing");
+      if (account.status !== "active") return json({ error: "This account is not active." }, 403);
+      return json({ id, user: account });
     } catch (error) {
-      console.error("[v0] Clerk account sync failed:", error);
-      return json({ error: "Account storage is unavailable" }, 503);
+      console.error("[auth/sync] Clerk or D1 account sync failed", error instanceof Error ? error.name : "UnknownError");
+      return json({ error: "Account syncing failed. Check the Worker's Clerk key and apply the D1 migrations." }, 503);
     }
   }
 
@@ -153,7 +155,7 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      const apiResponse = await handleCloudflareApi(request, env as CloudflareEnv);
+      const apiResponse = await handleCloudflareApi(request, cloudflareEnv(request, env));
       if (apiResponse) return apiResponse;
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
