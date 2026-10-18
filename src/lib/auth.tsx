@@ -1,13 +1,15 @@
-import { useAuth as useClerkAuth, useUser } from "@clerk/tanstack-react-start";
-import { createContext, useCallback, useContext, useEffect, type ReactNode } from "react";
+import { useAuth as useClerkAuth, useClerk, useUser } from "@clerk/tanstack-react-start";
+import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
-import { getDB, setSessionUserId } from "./store";
+import { getDB, setSessionUserId, syncSessionUser } from "./store";
+import type { User } from "./types";
 
 type Mode = "signin" | "signup";
 interface AuthCtx {
   /** Runs `action` now if signed in; otherwise prompts, then runs it after sign-in. */
   requireAuth: (action: () => void, reason?: string) => void;
   openAuth: (mode?: Mode) => void;
+  signOut: () => void;
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -15,6 +17,8 @@ const Ctx = createContext<AuthCtx | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, getToken } = useClerkAuth();
   const { user } = useUser();
+  const clerk = useClerk();
+  const pendingAction = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -22,24 +26,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSessionUserId(null);
       return;
     }
+    let cancelled = false;
+    const controller = new AbortController();
     void (async () => {
       const token = await getToken();
+      if (!token) throw new Error("Your sign-in session is not ready. Please try signing in again.");
       const response = await fetch("/api/auth/sync", {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          ...(token ? { authorization: `Bearer ${token}` } : {}),
+          authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          email: user.primaryEmailAddress?.emailAddress,
-          displayName: user.fullName ?? user.username ?? "Inktella member",
-          username: user.username ?? user.id.slice(-12),
-        }),
+        body: JSON.stringify({}),
+        signal: controller.signal,
       });
-      if (!response.ok) throw new Error("We couldn't sync your account.");
-      const result = (await response.json()) as { id: string };
-      setSessionUserId(result.id);
-    })().catch((error) => toast.error(error instanceof Error ? error.message : "Account sync failed."));
+      const result = await response.json() as { user?: User; error?: string };
+      if (!response.ok || !result.user) throw new Error(result.error ?? "We couldn't connect your account. Please try again.");
+      if (cancelled) return;
+      syncSessionUser(result.user);
+      const action = pendingAction.current;
+      pendingAction.current = null;
+      if (action) run(action);
+    })().catch((error) => {
+      if (!cancelled) toast.error(error instanceof Error ? error.message : "Account sync failed.");
+    });
+    return () => { cancelled = true; controller.abort(); };
   }, [getToken, isLoaded, isSignedIn, user]);
 
   const run = (fn: () => void) => {
@@ -50,18 +61,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const openAuth = useCallback((mode: Mode = "signin") => {
+    const options = { signInForceRedirectUrl: window.location.href, signUpForceRedirectUrl: window.location.href };
+    const redirect = mode === "signup" ? clerk.redirectToSignUp(options) : clerk.redirectToSignIn(options);
+    void redirect.catch(() => toast.error("Sign-in couldn't open. Please try again."));
+  }, [clerk]);
+
   const requireAuth = useCallback((action: () => void, why?: string) => {
     const db = getDB();
-    if (db.sessionUserId) return run(action);
+    if (isSignedIn && db.sessionUserId) return run(action);
     void why;
-    window.location.href = "https://accounts.inktella.com/sign-in?redirect_url=" + encodeURIComponent(window.location.href);
-  }, []);
+    if (isSignedIn) {
+      pendingAction.current = action;
+      toast.info("Your account is connecting. Please wait a moment.");
+      return;
+    }
+    openAuth();
+  }, [isSignedIn, openAuth]);
 
-  const openAuth = useCallback((m: Mode = "signin") => {
-    window.location.href = `https://accounts.inktella.com/${m === "signup" ? "sign-up" : "sign-in"}?redirect_url=${encodeURIComponent(window.location.href)}`;
-  }, []);
+  const signOut = useCallback(() => {
+    pendingAction.current = null;
+    void clerk.signOut().then(() => setSessionUserId(null)).catch(() => toast.error("Sign-out failed. Please try again."));
+  }, [clerk]);
 
-  return <Ctx.Provider value={{ requireAuth, openAuth }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ requireAuth, openAuth, signOut }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

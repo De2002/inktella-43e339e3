@@ -17,11 +17,10 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer";
-import { signOut, useCurrentUser } from "@/lib/store";
+import { useCurrentUser } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
 import { Avatar } from "./bits";
 import { SearchBox } from "./SearchBox";
-
-const ACCOUNT_URL = "https://accounts.inktella.com";
 
 function Logo() {
   return (
@@ -42,16 +41,13 @@ function Logo() {
 
 function AccountArea() {
   const me = useCurrentUser();
+  const { openAuth, signOut } = useAuth();
   const navigate = useNavigate();
   if (!me)
     return (
       <div className="flex items-center gap-1">
-        <Button asChild variant="ghost" size="sm">
-          <a href={`${ACCOUNT_URL}/sign-in`}>Sign in</a>
-        </Button>
-        <Button asChild size="sm" className="rounded-full">
-          <a href={`${ACCOUNT_URL}/sign-up`}>Get started</a>
-        </Button>
+        <Button variant="ghost" size="sm" onClick={() => openAuth("signin")}>Sign in</Button>
+        <Button size="sm" className="rounded-full" onClick={() => openAuth("signup")}>Get started</Button>
       </div>
     );
   return (
@@ -61,7 +57,7 @@ function AccountArea() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem asChild>
-          <a href={`${ACCOUNT_URL}/user`}>Profile</a>
+          <Link to="/u/$username" params={{ username: me.username }}>Profile</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link to="/library">Library</Link>

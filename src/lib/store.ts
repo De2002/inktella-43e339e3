@@ -27,6 +27,9 @@ export function hydrateStore() {
       remote.discoveryTags ??= [];
       remote.titleDiscoveryTags ??= [];
       remote.intentLinks ??= [];
+      const sessionUser = state.users.find((user) => user.id === state.sessionUserId);
+      remote.sessionUserId = state.sessionUserId;
+      if (sessionUser && !remote.users.some((user) => user.id === sessionUser.id)) remote.users.push(sessionUser);
       state = remote;
       emit();
     })
@@ -80,6 +83,16 @@ export function useCurrentUser(): User | null {
 export function setSessionUserId(id: string | null) {
   if (state.sessionUserId === id) return;
   state = { ...state, sessionUserId: id };
+  emit();
+}
+
+/** Install the server-verified account without persisting a browser session in D1. */
+export function syncSessionUser(user: User) {
+  state = {
+    ...state,
+    users: [...state.users.filter((existing) => existing.id !== user.id), user],
+    sessionUserId: user.id,
+  };
   emit();
 }
 
