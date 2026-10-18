@@ -152,8 +152,8 @@ export const seedTitles: Title[] = [
 
 const users: DB["users"] = [
   { id: "u-admin", username: "inktella", displayName: "Inktella Team", email: "admin@inktella.app", password: "admin123", role: "admin", status: "active", createdAt: "2026-08-01T09:00:00.000Z", bio: "Keeping the lights low and the conversation kind." },
-  { id: "u-amara", username: "amara", displayName: "Amara Okello", email: "amara@example.com", password: "demo1234", role: "user", status: "active", createdAt: "2026-08-10T09:00:00.000Z", bio: "Sunday matinee person. Cries at animation." },
-  { id: "u-leo", username: "leo", displayName: "Leo Marquez", email: "leo@example.com", password: "demo1234", role: "user", status: "active", createdAt: "2026-08-12T09:00:00.000Z", bio: "Rewatcher. Mostly sci-fi." },
+  { id: "u-amara", username: "amara", displayName: "Amara Okello", email: "amara@example.com", password: "demo1234", role: "user", status: "active", createdAt: "2026-08-10T09:00:00.000Z", bio: "Sunday matinee person. Cries at animation.", favoriteTitleIds: ["t-spirited-away", "t-coco", "t-past-lives", "t-fleabag"] },
+  { id: "u-leo", username: "leo", displayName: "Leo Marquez", email: "leo@example.com", password: "demo1234", role: "user", status: "active", createdAt: "2026-08-12T09:00:00.000Z", bio: "Rewatcher. Mostly sci-fi.", favoriteTitleIds: ["t-interstellar", "t-arrival", "t-dark"] },
   { id: "u-sana", username: "sana", displayName: "Sana Iqbal", email: "sana@example.com", password: "demo1234", role: "user", status: "active", createdAt: "2026-08-20T09:00:00.000Z" },
   { id: "u-tom", username: "tomw", displayName: "Tom Whitfield", email: "tom@example.com", password: "demo1234", role: "user", status: "active", createdAt: "2026-09-02T09:00:00.000Z", bio: "I watch things slowly." },
 ];

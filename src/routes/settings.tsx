@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { attempt, useAuth } from "@/lib/auth";
-import { deleteAccount, updateProfile, useCurrentUser } from "@/lib/store";
+import { deleteAccount, updateProfile, useCurrentUser, useDB } from "@/lib/store";
 import { applyTheme, getThemePref, type ThemePref } from "@/lib/theme";
 import { PageHeader } from "@/components/bits";
 
@@ -33,9 +33,16 @@ function Settings() {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
+  const [favoriteTitleIds, setFavoriteTitleIds] = useState<string[]>(["", "", "", ""]);
+  const db = useDB();
   useEffect(() => setTheme(getThemePref()), []);
   useEffect(() => {
-    if (me) { setName(me.displayName); setUsername(me.username); setBio(me.bio ?? ""); }
+    if (me) {
+      setName(me.displayName);
+      setUsername(me.username);
+      setBio(me.bio ?? "");
+      setFavoriteTitleIds([...(me.favoriteTitleIds ?? []), "", "", ""].slice(0, 4));
+    }
   }, [me?.id]);
 
   return (
@@ -53,11 +60,26 @@ function Settings() {
         <p className="py-8 text-muted-foreground"><button className="underline" onClick={() => openAuth()}>Sign in</button> to edit your profile.</p>
       ) : (
         <>
-          <form className="space-y-4 border-b py-8" onSubmit={(e) => { e.preventDefault(); attempt(() => updateProfile(me.id, { displayName: name, username, bio }), "Profile saved"); }}>
+          <form className="space-y-4 border-b py-8" onSubmit={(e) => { e.preventDefault(); attempt(() => updateProfile(me.id, { displayName: name, username, bio, favoriteTitleIds }), "Profile saved"); }}>
             <h2 className="text-2xl">Profile</h2>
             <div className="space-y-1.5"><Label htmlFor="s-name">Display name</Label><Input id="s-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></div>
             <div className="space-y-1.5"><Label htmlFor="s-user">Username</Label><Input id="s-user" value={username} onChange={(e) => setUsername(e.target.value)} maxLength={30} /></div>
             <div className="space-y-1.5"><Label htmlFor="s-bio">Bio</Label><Textarea id="s-bio" value={bio} onChange={(e) => setBio(e.target.value)} maxLength={300} rows={3} /></div>
+            <fieldset className="space-y-3 pt-2">
+              <legend className="font-display text-2xl">Favourite Films</legend>
+              <p className="text-sm text-muted-foreground">Choose up to four titles from Inktella. Leave any slot blank to show fewer.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {favoriteTitleIds.map((titleId, index) => (
+                  <div key={index} className="space-y-1.5">
+                    <Label htmlFor={`s-favourite-${index}`}>Slot {index + 1}</Label>
+                    <select id={`s-favourite-${index}`} value={titleId} onChange={(e) => setFavoriteTitleIds((current) => current.map((value, i) => i === index ? e.target.value : value))} className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+                      <option value="">None</option>
+                      {db.titles.filter((title) => !favoriteTitleIds.includes(title.id) || title.id === titleId).map((title) => <option key={title.id} value={title.id}>{title.name}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
             <Button type="submit" className="rounded-full">Save</Button>
           </form>
           <section className="space-y-3 py-8">

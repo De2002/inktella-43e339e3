@@ -66,6 +66,27 @@ function Profile() {
         ))}
       </div>
 
+      {u.favoriteTitleIds?.length ? (
+        <section className="mt-8 border-b pb-7" aria-labelledby="favourite-films-heading">
+          <div className="mb-3 flex items-center gap-3">
+            <h2 id="favourite-films-heading" className="font-display text-lg text-primary">Favourite Films</h2>
+            <span className="h-px flex-1 bg-primary/20" aria-hidden="true" />
+          </div>
+          <div className="grid grid-cols-4 gap-2.5 sm:gap-4">
+            {u.favoriteTitleIds.slice(0, 4).map((titleId) => {
+              const title = db.titles.find((candidate) => candidate.id === titleId);
+              if (!title) return null;
+              return (
+                <TitleLink key={title.id} title={title} className="group block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                  <Poster title={title} size="xs" className="rounded-lg shadow-sm transition-transform duration-300 group-hover:-translate-y-1 group-hover:shadow-md" />
+                  <span className="sr-only">{title.name}</span>
+                </TitleLink>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
       <section className="mt-6 border-b pb-5" aria-label="AI profile description">
         <button type="button" onClick={() => setAiOpen((open) => !open)} aria-expanded={aiOpen} className="flex w-full items-start gap-3 text-left">
           <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
