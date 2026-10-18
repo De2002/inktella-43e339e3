@@ -56,17 +56,27 @@ function Profile() {
 
   return (
     <div className="mx-auto max-w-2xl pb-10">
-      {u.bio && <p className="max-w-lg pt-8 text-[15px] leading-7 text-muted-foreground">{u.bio}</p>}
+      <div className="relative isolate -mx-4 overflow-hidden px-4 pb-1 sm:-mx-6 sm:px-6">
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[27rem] bg-cover bg-center opacity-80"
+          style={{ backgroundImage: "url('/profile-hero.png')" }}
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,rgba(18,18,20,0.08)_0%,rgba(18,18,20,0.28)_38%,hsl(var(--background))_88%,hsl(var(--background))_100%)]"
+          aria-hidden="true"
+        />
 
-      <header className="flex flex-col items-center pt-10 text-center sm:pt-12">
-        <div className="rounded-[1.35rem] bg-muted p-1.5 shadow-sm">
-          <Avatar user={u} size={104} />
-        </div>
-        <h1 className="mt-5 font-display text-4xl leading-tight tracking-tight sm:text-5xl">{u.displayName}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">@{u.username}{u.status !== "active" && " · restricted"}</p>
-      </header>
+        <header className="flex flex-col items-center pt-12 text-center sm:pt-16">
+          <div className="rounded-[1.35rem] bg-background/60 p-1.5 shadow-sm backdrop-blur-sm">
+            <Avatar user={u} size={104} />
+          </div>
+          <h1 className="mt-5 font-display text-4xl leading-tight tracking-tight sm:text-5xl">{u.displayName}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">@{u.username}{u.status !== "active" && " · restricted"}</p>
+          {u.bio && <p className="mt-4 max-w-lg text-[15px] leading-7 text-muted-foreground">{u.bio}</p>}
+        </header>
 
-      <div className="mt-9 grid grid-cols-3 border-y py-4">
+        <div className="mt-9 grid grid-cols-3 border-y border-border/70 py-4">
         {stats.map((stat) => (
           <button key={stat.label} type="button" onClick={() => setTab(stat.tab)} className="group flex min-h-14 flex-col items-center justify-center gap-0.5 border-r last:border-r-0" aria-label={`View ${stat.label}`}>
             <span className="font-display text-2xl leading-none transition-colors group-hover:text-primary">{stat.value}</span>
@@ -127,12 +137,13 @@ function Profile() {
         ))}
       </nav>
 
-      <div className="pt-1">
-        {tab === "activity" && (activity.length ? activity.map((a) => a.el) : <Empty>Nothing shared yet.</Empty>)}
-        {tab === "collections" && (cols.length ? <div className="mt-6 grid gap-6 sm:grid-cols-2">{cols.map((c) => <CollectionCard key={c.id} collection={c} />)}</div> : <Empty>No collections yet.</Empty>)}
-        {tab === "watched" && (watched.length ? (
-          <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-4">{watched.map((t) => <TitleLink key={t!.id} title={t!}><Poster title={t!} size="sm" /></TitleLink>)}</div>
-        ) : <Empty>Nothing marked as watched yet.</Empty>)}
+        <div className="pt-1">
+          {tab === "activity" && (activity.length ? activity.map((a) => a.el) : <Empty>Nothing shared yet.</Empty>)}
+          {tab === "collections" && (cols.length ? <div className="mt-6 grid gap-6 sm:grid-cols-2">{cols.map((c) => <CollectionCard key={c.id} collection={c} />)}</div> : <Empty>No collections yet.</Empty>)}
+          {tab === "watched" && (watched.length ? (
+            <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-4">{watched.map((t) => <TitleLink key={t!.id} title={t!}><Poster title={t!} size="sm" /></TitleLink>)}</div>
+          ) : <Empty>Nothing marked as watched yet.</Empty>)}
+        </div>
       </div>
     </div>
   );
