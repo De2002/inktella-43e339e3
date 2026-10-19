@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "inktella",
+  "name": "inktella-43e339e3",
   "compatibility_date": "2026-10-17",
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [{
