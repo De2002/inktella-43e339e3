@@ -6,6 +6,7 @@ export interface D1Database {
     bind(...values: unknown[]): {
       first<T = unknown>(): Promise<T | null>;
       run(): Promise<unknown>;
+      all?<T = unknown>(): Promise<{ results: T[] }>;
     };
   };
 }
@@ -54,27 +55,47 @@ export async function readAccount(db: D1Database, id: string): Promise<User | nu
 
 const emptyState = () => createSeed();
 
+type AccountRow = {
+  id: string; clerk_id: string | null; username: string; email: string; display_name: string;
+  role: User["role"]; status: User["status"]; is_pro: number; bio: string | null; created_at: string;
+};
+
+/** Accounts live in the users table; merge them so every signed-up profile is visible. */
+async function mergeAccounts(db: D1Database, state: DB): Promise<DB> {
+  const stmt = db.prepare(
+    "SELECT id, clerk_id, username, email, display_name, role, status, is_pro, bio, created_at FROM users",
+  ).bind();
+  if (!stmt.all) return state;
+  const { results } = await stmt.all<AccountRow>();
+  const byId = new Map(state.users.map((u) => [u.id, u]));
+  for (const row of results) {
+    const prev = byId.get(row.id);
+    byId.set(row.id, {
+      ...(prev ?? {}),
+      id: row.id, clerkId: row.clerk_id ?? undefined, username: row.username, email: row.email,
+      displayName: row.display_name, role: row.role, status: row.status, isPro: Boolean(row.is_pro),
+      bio: row.bio ?? prev?.bio, createdAt: row.created_at, password: "",
+    } as User);
+  }
+  return { ...state, users: [...byId.values()], sessionUserId: null };
+}
+
 export async function readState(db: D1Database): Promise<DB> {
   const row = await db
     .prepare("SELECT payload FROM app_state WHERE id = 1")
     .bind()
     .first<{ payload: string }>();
-  if (!row?.payload) {
-    const seed = emptyState();
-    await writeState(db, seed);
-    return seed;
-  }
+  let parsed: DB | null = null;
   try {
-    const parsed = JSON.parse(row.payload) as DB;
-    if (parsed.version !== 1 || parsed.titles.length === 0) {
-      const seed = emptyState();
-      await writeState(db, seed);
-      return seed;
-    }
-    return parsed;
+    parsed = row?.payload ? (JSON.parse(row.payload) as DB) : null;
   } catch {
-    return emptyState();
+    parsed = null;
   }
+  if (!parsed || parsed.version !== 1 || parsed.titles.length === 0) {
+    parsed = emptyState();
+    await writeState(db, parsed);
+  }
+  return mergeAccounts(db, parsed);
 }
 
 export async function writeState(db: D1Database, state: DB) {
