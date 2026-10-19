@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronDown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDB, useStoreReady } from "@/lib/store";
+import { canonicalUsername, useDB, useStoreReady } from "@/lib/store";
 import { Avatar, Empty, Poster, TitleLink } from "@/components/bits";
 import { PostItem, QuestionCard, ReviewCard } from "@/components/FeedItems";
 import { CollectionCard } from "@/components/CollectionCard";
@@ -29,7 +29,8 @@ function Profile() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiDescription, setAiDescription] = useState("Ella is getting to know this cinephile's unique journey…");
   const [aiLoading, setAiLoading] = useState(false);
-  const u = db.users.find((x) => x.username === username);
+  const profileUsername = canonicalUsername(username);
+  const u = db.users.find((x) => canonicalUsername(x.username) === profileUsername);
   const trail = useMemo(() => {
     if (!u || u.showTrail === false) return [];
     const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
