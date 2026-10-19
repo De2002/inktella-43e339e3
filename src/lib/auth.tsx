@@ -1,6 +1,15 @@
 import { useAuth as useClerkAuth, useClerk, useUser } from "@clerk/tanstack-react-start";
-import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 import { getDB, setAuthTokenGetter, setSessionUserId, syncSessionUser } from "./store";
 import type { User } from "./types";
 
@@ -27,6 +36,8 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   const { user } = useUser();
   const clerk = useClerk();
   const pendingAction = useRef<(() => void) | null>(null);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [authPromptReason, setAuthPromptReason] = useState("Sign in to continue with this action.");
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -88,7 +99,9 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
       toast.info("Your account is connecting. Please wait a moment.");
       return;
     }
-    openAuth();
+    pendingAction.current = action;
+    setAuthPromptReason(why ?? "Sign in to continue with this action.");
+    setAuthPromptOpen(true);
   }, [isSignedIn, openAuth]);
 
   const signOut = useCallback(() => {
@@ -96,7 +109,34 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     void clerk.signOut().then(() => setSessionUserId(null)).catch(() => toast.error("Sign-out failed. Please try again."));
   }, [clerk]);
 
-  return <Ctx.Provider value={{ requireAuth, openAuth, signOut }}>{children}</Ctx.Provider>;
+  const chooseAuth = (mode: Mode) => {
+    setAuthPromptOpen(false);
+    openAuth(mode);
+  };
+
+  return (
+    <Ctx.Provider value={{ requireAuth, openAuth, signOut }}>
+      {children}
+      <Sheet open={authPromptOpen} onOpenChange={setAuthPromptOpen}>
+        <SheetContent side="bottom" className="rounded-t-3xl px-5 pb-8 sm:mx-auto sm:max-w-lg">
+          <SheetHeader className="mx-auto max-w-md text-left">
+            <SheetTitle className="font-display text-3xl font-normal">Keep this moment with you</SheetTitle>
+            <SheetDescription className="pt-1 text-base leading-relaxed">
+              {authPromptReason} Your browsing stays right here — sign in or create an account only if you&apos;d like to continue.
+            </SheetDescription>
+          </SheetHeader>
+          <SheetFooter className="mx-auto mt-6 grid w-full max-w-md grid-cols-2 gap-3 sm:flex-row">
+            <Button type="button" variant="outline" className="h-11 rounded-full" onClick={() => chooseAuth("signin")}>
+              Sign in
+            </Button>
+            <Button type="button" className="h-11 rounded-full" onClick={() => chooseAuth("signup")}>
+              Create account
+            </Button>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
+    </Ctx.Provider>
+  );
 }
 
 export function useAuth() {
