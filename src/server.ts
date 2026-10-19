@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { readState, writeState, cloudflareEnv, type CloudflareEnv } from "./lib/cloudflare";
+import { d1Posts, d1Reviews, d1Titles, d1Discussions, d1Query } from "./lib/d1";
 import { createClerkClient, verifyToken } from "@clerk/backend";
 import { verifyWebhook } from "@clerk/backend/webhooks";
 import { mediaKey } from "./lib/media";
@@ -97,13 +98,9 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
 
   if (url.pathname === "/api/posts" && request.method === "GET") {
     if (!env.DB) return json({ error: "Cloudflare D1 binding DB is missing from this Worker." }, 503);
-    const titleId = url.searchParams.get("titleId");
+    const titleId = url.searchParams.get("titleId") ?? undefined;
     try {
-      const query = titleId
-        ? "SELECT id, title_id, user_id, category, body, quote_character, quote_note, spoiler, season, episode, created_at, updated_at, removed FROM posts WHERE removed = 0 AND title_id = ? ORDER BY created_at DESC"
-        : "SELECT id, title_id, user_id, category, body, quote_character, quote_note, spoiler, season, episode, created_at, updated_at, removed FROM posts WHERE removed = 0 ORDER BY created_at DESC";
-      const stmt = titleId ? env.DB.prepare(query).bind(titleId) : env.DB.prepare(query).bind();
-      const results = stmt.all ? (await stmt.all()).results : [];
+      const results = await d1Posts.list(env.DB, { titleId });
       return json(results);
     } catch {
       return json({ error: "Failed to query posts from D1" }, 500);
@@ -112,13 +109,9 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
 
   if (url.pathname === "/api/reviews" && request.method === "GET") {
     if (!env.DB) return json({ error: "Cloudflare D1 binding DB is missing from this Worker." }, 503);
-    const titleId = url.searchParams.get("titleId");
+    const titleId = url.searchParams.get("titleId") ?? undefined;
     try {
-      const query = titleId
-        ? "SELECT id, title_id, user_id, heading, body, spoiler, created_at, updated_at, removed FROM reviews WHERE removed = 0 AND title_id = ? ORDER BY created_at DESC"
-        : "SELECT id, title_id, user_id, heading, body, spoiler, created_at, updated_at, removed FROM reviews WHERE removed = 0 ORDER BY created_at DESC";
-      const stmt = titleId ? env.DB.prepare(query).bind(titleId) : env.DB.prepare(query).bind();
-      const results = stmt.all ? (await stmt.all()).results : [];
+      const results = await d1Reviews.list(env.DB, { titleId });
       return json(results);
     } catch {
       return json({ error: "Failed to query reviews from D1" }, 500);
@@ -128,10 +121,7 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
   if (url.pathname === "/api/titles" && request.method === "GET") {
     if (!env.DB) return json({ error: "Cloudflare D1 binding DB is missing from this Worker." }, 503);
     try {
-      const stmt = env.DB.prepare(
-        "SELECT id, slug, kind, name, alt_names, year, genres, synopsis, runtime, country, language, trailer_url, people, status, hue, created_at FROM titles WHERE status = 'published' ORDER BY year DESC",
-      ).bind();
-      const results = stmt.all ? (await stmt.all()).results : [];
+      const results = await d1Titles.list(env.DB);
       return json(results);
     } catch {
       return json({ error: "Failed to query titles from D1" }, 500);
@@ -140,13 +130,9 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
 
   if (url.pathname === "/api/questions" && request.method === "GET") {
     if (!env.DB) return json({ error: "Cloudflare D1 binding DB is missing from this Worker." }, 503);
-    const titleId = url.searchParams.get("titleId");
+    const titleId = url.searchParams.get("titleId") ?? undefined;
     try {
-      const query = titleId
-        ? "SELECT id, title_id, user_id, text, details, spoiler, season, episode, created_at, updated_at, removed FROM questions WHERE removed = 0 AND title_id = ? ORDER BY created_at DESC"
-        : "SELECT id, title_id, user_id, text, details, spoiler, season, episode, created_at, updated_at, removed FROM questions WHERE removed = 0 ORDER BY created_at DESC";
-      const stmt = titleId ? env.DB.prepare(query).bind(titleId) : env.DB.prepare(query).bind();
-      const results = stmt.all ? (await stmt.all()).results : [];
+      const results = await d1Discussions.listQuestions(env.DB, titleId);
       return json(results);
     } catch {
       return json({ error: "Failed to query questions from D1" }, 500);
@@ -156,10 +142,10 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
   if (url.pathname === "/api/collections" && request.method === "GET") {
     if (!env.DB) return json({ error: "Cloudflare D1 binding DB is missing from this Worker." }, 503);
     try {
-      const stmt = env.DB.prepare(
+      const results = await d1Query(
+        env.DB,
         "SELECT id, slug, user_id, name, description, title_ids, created_at, updated_at FROM collections ORDER BY updated_at DESC",
-      ).bind();
-      const results = stmt.all ? (await stmt.all()).results : [];
+      );
       return json(results);
     } catch {
       return json({ error: "Failed to query collections from D1" }, 500);

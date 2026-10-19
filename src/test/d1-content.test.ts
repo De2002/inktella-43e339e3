@@ -119,4 +119,29 @@ describe("Cloudflare D1 Content Persistence", () => {
     const reviewsData = await reviewsRes?.json();
     expect(reviewsData).toEqual([{ id: "r1", body: "D1 Review" }]);
   });
+
+  it("initializes D1 client with getD1Client and supports queries", async () => {
+    const { getD1Client, d1Query, d1QueryFirst, createInMemoryD1 } = await import("@/lib/d1");
+    
+    // In-memory D1 test
+    const inMem = createInMemoryD1();
+    expect(inMem).toBeDefined();
+    expect(typeof inMem.prepare).toBe("function");
+
+    const posts = await inMem.prepare("SELECT id FROM posts").bind().all<{ id: string }>();
+    expect(posts.results.length).toBeGreaterThan(0);
+
+    const firstPost = await d1QueryFirst<{ id: string }>(inMem, "SELECT id FROM posts");
+    expect(firstPost).toBeDefined();
+    expect(firstPost?.id).toBeTruthy();
+
+    // getD1Client resolves from mock DB
+    const client = getD1Client(inMem);
+    expect(client).toBe(inMem);
+
+    // getD1Client resolves from Request runtime
+    const dummyReq = new Request("https://inktella.example") as Request & { runtime: { cloudflare: { env: { DB: D1Database } } } };
+    dummyReq.runtime = { cloudflare: { env: { DB: inMem } } };
+    expect(getD1Client(dummyReq)).toBe(inMem);
+  });
 });
