@@ -172,7 +172,14 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
   }
 
   if (url.pathname === "/api/media" && env.MEDIA && request.method === "POST") {
+    const caller = await verifyCaller();
+    if (caller instanceof Response) return caller;
+    if (!env.DB) return json({ error: "Database binding is missing" }, 503);
+    const account = await env.DB.prepare("SELECT role, status FROM users WHERE clerk_id = ?").bind(caller).first<{ role: string; status: string }>();
     const form = await request.formData();
+    const purpose = form.get("purpose");
+    if (purpose === "poster" && account?.role !== "admin") return json({ error: "Only administrators can upload posters" }, 403);
+    if (!account || account.status !== "active") return json({ error: "Active account required" }, 403);
     const file = form.get("file");
     if (!(file instanceof File)) return json({ error: "A file is required" }, 400);
     if (file.size > 25 * 1024 * 1024) return json({ error: "Files must be 25MB or smaller" }, 413);

@@ -5,8 +5,9 @@ import { EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { titlePath } from "@/lib/store";
 import type { Title, User } from "@/lib/types";
+import { mediaUrl } from "@/lib/media";
 
-export function Poster({ title, className, size = "md" }: { title: Pick<Title, "name" | "year" | "hue" | "kind">; className?: string; size?: "xs" | "sm" | "md" | "lg" }) {
+export function Poster({ title, className, size = "md" }: { title: Pick<Title, "name" | "year" | "hue" | "kind"> & { posterKey?: string }; className?: string; size?: "xs" | "sm" | "md" | "lg" }) {
   const text = { xs: "text-[9px]", sm: "text-sm", md: "text-lg", lg: "text-3xl" }[size];
   return (
     <div
@@ -14,7 +15,10 @@ export function Poster({ title, className, size = "md" }: { title: Pick<Title, "
       style={{ "--h": title.hue } as CSSProperties}
       aria-hidden
     >
-      {size !== "xs" && (
+      {title.posterKey ? (
+        <img src={mediaUrl(title.posterKey)} alt={`${title.name} poster`} className="absolute inset-0 size-full object-cover" />
+      ) : null}
+      {size !== "xs" && !title.posterKey && (
         <>
           <span className="absolute left-[8%] top-[6%] text-[10px] uppercase tracking-[0.2em] opacity-60">{title.kind}</span>
           <span className={cn("font-display leading-[1.05]", text)}>{title.name}</span>
@@ -25,7 +29,7 @@ export function Poster({ title, className, size = "md" }: { title: Pick<Title, "
   );
 }
 
-export function Avatar({ user, size = 36 }: { user: Pick<User, "displayName" | "username"> | undefined; size?: number }) {
+export function Avatar({ user, size = 36 }: { user: Pick<User, "displayName" | "username"> & { avatarKey?: string } | undefined; size?: number }) {
   const name = user?.displayName ?? "?";
   const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
   let h = 0;
@@ -36,7 +40,7 @@ export function Avatar({ user, size = 36 }: { user: Pick<User, "displayName" | "
       style={{ "--h": h, width: size, height: size, fontSize: size * 0.38 } as CSSProperties}
       aria-hidden
     >
-      {initials}
+      {user?.avatarKey ? <img src={mediaUrl(user.avatarKey)} alt="" className="size-full rounded-full object-cover" /> : initials}
     </span>
   );
 }
