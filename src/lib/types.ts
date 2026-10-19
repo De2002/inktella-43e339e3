@@ -210,6 +210,7 @@ export interface DB {
   likes: Like[];
   collections: Collection[];
   savedCollections: { userId: string; collectionId: string }[];
+  follows: { followerId: string; followingId: string; createdAt: string }[];
   library: LibraryEntry[];
   trail: TrailEntry[];
   recommendations: RecommendVote[];

@@ -51,6 +51,7 @@ export function hydrateStore() {
     .then((remote) => {
       if (!remote || remote.version !== 1) return;
       remote.recommendations ??= [];
+      remote.follows ??= [];
       remote.discoveryTags ??= [];
       remote.titleDiscoveryTags ??= [];
       remote.intentLinks ??= [];
@@ -249,6 +250,7 @@ export function deleteAccount(userId: string) {
     db.likes = db.likes.filter((x) => x.userId !== userId);
     db.collections = db.collections.filter((x) => x.userId !== userId);
     db.savedCollections = db.savedCollections.filter((x) => x.userId !== userId);
+    db.follows = db.follows.filter((x) => x.followerId !== userId && x.followingId !== userId);
     db.library = db.library.filter((x) => x.userId !== userId);
     db.trail = db.trail.filter((x) => x.userId !== userId);
     db.recommendations = db.recommendations.filter((x) => x.userId !== userId);
@@ -522,6 +524,16 @@ export function setLibrary(titleId: string, s: "watched" | "want") {
 }
 
 /** One vote per person per title; calling again changes the vote. */
+export function toggleFollow(userId: string) {
+  const viewer = me();
+  if (viewer.id === userId) throw new Error("You can't follow yourself.");
+  mutate((db) => {
+    const existing = db.follows.findIndex((follow) => follow.followerId === viewer.id && follow.followingId === userId);
+    if (existing >= 0) db.follows.splice(existing, 1);
+    else db.follows.push({ followerId: viewer.id, followingId: userId, createdAt: now() });
+  });
+}
+
 export function setRecommendation(titleId: string, value: "yes" | "no") {
   const u = me();
   mutate((db) => {
