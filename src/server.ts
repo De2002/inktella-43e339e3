@@ -65,8 +65,12 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
         return json({ ok: true });
       }
     } catch (error) {
-      console.error("[api/db] D1 failed", error instanceof Error ? error.message : error);
-      return json({ error: "Database error. Apply the D1 migrations and check the DB binding." }, 503);
+      console.error("[api/db] PUT failed", {
+        method: request.method,
+        pathname: url.pathname,
+        error,
+      });
+      return json({ error: "Database write failed. Check the Worker logs for the original exception." }, 503);
     }
   }
 
