@@ -27,7 +27,17 @@ export function DiscoveryBlurb({ title }: { title: Title }) {
     return result;
   }, [canDiscover, links, title.synopsis]);
   const activeTag = tagId ? db.discoveryTags.find((tag) => tag.id === tagId) : undefined;
-  const results = activeTag ? db.titleDiscoveryTags.filter((item) => item.tagId === activeTag.id && item.titleId !== title.id).map((item) => db.titles.find((candidate) => candidate.id === item.titleId)).filter((candidate): candidate is Title => Boolean(candidate && candidate.status === "published")) : [];
+  const results = useMemo(() => {
+    if (!activeTag) return [];
+    const matchingTitleIds = new Set(
+      db.titleDiscoveryTags
+        .filter((item) => item.tagId === activeTag.id && item.titleId !== title.id)
+        .map((item) => item.titleId),
+    );
+    return db.titles.filter(
+      (candidate) => matchingTitleIds.has(candidate.id) && candidate.status === "published",
+    );
+  }, [activeTag, db.titleDiscoveryTags, db.titles, title.id]);
   return (
     <>
       <p className="mt-5 leading-relaxed">
