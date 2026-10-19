@@ -672,9 +672,9 @@ export async function writeState(db: D1Database, state: DB) {
     await db
       .prepare(
         `INSERT INTO users (id, clerk_id, username, email, display_name, role, status, is_pro, bio, avatar_key, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET clerk_id=COALESCE(excluded.clerk_id, users.clerk_id), username=excluded.username, email=excluded.email, display_name=excluded.display_name,
-      role=excluded.role, status=excluded.status, is_pro=excluded.is_pro, bio=excluded.bio, avatar_key=excluded.avatar_key`,
+      role=excluded.role, status=excluded.status, is_pro=excluded.is_pro, bio=excluded.bio, avatar_key=excluded.avatar_key, created_at=excluded.created_at`,
       )
       .bind(
         user.id,
