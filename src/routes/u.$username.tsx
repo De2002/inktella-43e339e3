@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ChevronDown, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDB } from "@/lib/store";
+import { useDB, useStoreReady } from "@/lib/store";
 import { Avatar, Empty, Poster, TitleLink } from "@/components/bits";
 import { PostItem, QuestionCard, ReviewCard } from "@/components/FeedItems";
 import { CollectionCard } from "@/components/CollectionCard";
@@ -24,9 +24,10 @@ export const Route = createFileRoute("/u/$username")({
 function Profile() {
   const { username } = Route.useParams();
   const db = useDB();
+  const ready = useStoreReady();
   const [tab, setTab] = useState<"activity" | "collections" | "watched">("activity");
   const u = db.users.find((x) => x.username === username);
-  if (!u) return <Empty>No one goes by that name here.</Empty>;
+  if (!u) return <Empty>{ready ? "No one goes by that name here." : "Loading profile…"}</Empty>;
 
   const activity = [
     ...db.posts.filter((p) => p.userId === u.id && !p.removed).map((p) => ({ at: p.createdAt, el: <PostItem key={p.id} post={p} showTitle /> })),

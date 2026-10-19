@@ -10,17 +10,43 @@ import type { DB, Kind, PostCategory, ReplyTarget, TargetType, Title, User } fro
 const serverState: DB = createSeed();
 let state: DB = serverState;
 let hydrated = false;
+let ready = false;
 const listeners = new Set<() => void>();
+const readyListeners = new Set<() => void>();
+let tokenGetter: (() => Promise<string | null>) | null = null;
 
 function emit() {
   listeners.forEach((l) => l());
+}
+
+/** Auth layer registers how to obtain a Clerk session token for writes. */
+export function setAuthTokenGetter(fn: (() => Promise<string | null>) | null) {
+  tokenGetter = fn;
+}
+
+function markReady() {
+  ready = true;
+  readyListeners.forEach((l) => l());
+}
+
+/** True once the D1 snapshot has loaded (or failed), so pages can avoid "not found" flashes. */
+export function useStoreReady(): boolean {
+  return useSyncExternalStore(
+    (l) => { readyListeners.add(l); return () => readyListeners.delete(l); },
+    () => ready,
+    () => false,
+  );
 }
 
 export function hydrateStore() {
   if (hydrated || typeof window === "undefined") return;
   hydrated = true;
   void fetch("/api/db", { credentials: "same-origin" })
-    .then((response) => (response.ok ? (response.json() as Promise<DB>) : null))
+    .then(async (response) => {
+      if (response.ok) return response.json() as Promise<DB>;
+      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(body.error ?? `Couldn't load data (${response.status})`);
+    })
     .then((remote) => {
       if (!remote || remote.version !== 1) return;
       remote.recommendations ??= [];
@@ -33,20 +59,34 @@ export function hydrateStore() {
       state = remote;
       emit();
     })
-    .catch(() => {
-      // The seed remains available for local previews until the Worker binding is present.
-    });
+    .catch((error: Error) => {
+      console.error("[store] hydrate failed:", error.message);
+    })
+    .finally(markReady);
 }
+
+let writeChain: Promise<void> = Promise.resolve();
 
 function persist() {
   if (typeof window === "undefined") return;
-  void fetch("/api/db", {
-    method: "PUT",
-    credentials: "same-origin",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(state),
-  }).catch(() => {
-    // Keep optimistic UI state; the next mutation retries the write.
+  writeChain = writeChain.then(async () => {
+    try {
+      const token = tokenGetter ? await tokenGetter() : null;
+      if (!token) throw new Error("Please sign in again to save your changes.");
+      const response = await fetch("/api/db", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
+        body: JSON.stringify(state),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `Saving failed (${response.status})`);
+      }
+    } catch (error) {
+      const { toast } = await import("sonner");
+      toast.error(`Not saved: ${(error as Error).message}`);
+    }
   });
 }
 

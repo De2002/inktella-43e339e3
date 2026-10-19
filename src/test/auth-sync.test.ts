@@ -52,3 +52,11 @@ describe("Clerk to D1 account sync", () => {
     expect(mocks.attach).not.toHaveBeenCalled();
   });
 });
+import { handleCloudflareApi as handleApi } from "@/server";
+describe("/api/db writes", () => {
+  it("rejects saves without a signed-in session", async () => {
+    const db = { prepare: () => ({ bind: () => ({ first: async () => null, run: async () => ({}) }) }) };
+    const res = await handleApi(new Request("https://x.test/api/db", { method: "PUT", body: "{}" }), { DB: db as never, CLERK_SECRET_KEY: "sk_test" });
+    expect(res?.status).toBe(401);
+  });
+});
