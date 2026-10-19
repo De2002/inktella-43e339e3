@@ -156,6 +156,11 @@ export function slugify(s: string) {
     .slice(0, 80);
 }
 
+/** Public profile URLs use the same canonical form as account creation/editing. */
+export function canonicalUsername(value: string) {
+  return slugify(decodeURIComponent(value)).replace(/-/g, "_");
+}
+
 /* ---------------- auth ---------------- */
 
 export function signIn(email: string, password: string): User {
