@@ -47,6 +47,7 @@ export interface Title {
   people: Person[];
   status: TitleStatus;
   hue: number;
+  posterKey?: string;
   createdAt: string;
 }
 
@@ -165,6 +166,7 @@ export interface User {
   email: string;
   password: string;
   bio?: string;
+  avatarKey?: string;
   favoriteTitleIds?: string[];
   showTrail?: boolean;
   isPro?: boolean;

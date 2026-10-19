@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { createSeed } from "./seed";
 import type { DB, Kind, PostCategory, ReplyTarget, TargetType, Title, User } from "./types";
+import { uploadMedia } from "./media";
 
 /*
  * D1-backed data layer. The in-memory copy is only the reactive client cache;
@@ -100,6 +101,12 @@ function mutate(fn: (db: DB) => void) {
 
 export function getDB() {
   return state;
+}
+
+export async function uploadUserMedia(file: File, purpose: "avatar" | "poster") {
+  const token = tokenGetter ? await tokenGetter() : null;
+  if (!token) throw new Error("Please sign in again to upload media.");
+  return uploadMedia(file, token, purpose);
 }
 
 function subscribe(l: () => void) {
@@ -208,7 +215,7 @@ export function recordTrailVisit(userId: string, titleId: string) {
 
 export function updateProfile(
   userId: string,
-  p: { displayName: string; username: string; bio?: string; favoriteTitleIds?: string[]; showTrail?: boolean }, 
+  p: { displayName: string; username: string; bio?: string; avatarKey?: string; favoriteTitleIds?: string[]; showTrail?: boolean }, 
 ) {
   const username = slugify(p.username).replace(/-/g, "_");
   const favoriteTitleIds = [...new Set((p.favoriteTitleIds ?? []).filter(Boolean))].slice(0, 4);
@@ -220,6 +227,7 @@ export function updateProfile(
     u.displayName = p.displayName.trim() || username;
     u.username = username;
     u.bio = p.bio?.trim() || undefined;
+    u.avatarKey = p.avatarKey || u.avatarKey;
     u.favoriteTitleIds = favoriteTitleIds;
     u.showTrail = p.showTrail ?? true;
   });

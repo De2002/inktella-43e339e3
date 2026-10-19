@@ -24,6 +24,7 @@ import {
 } from "@/lib/store";
 import type { DB, Person, TargetType, Title } from "@/lib/types";
 import { Empty, PageHeader, Poster, TitleLink } from "@/components/bits";
+import { uploadUserMedia } from "@/lib/store";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -119,21 +120,28 @@ function TitleForm({
     setF((x) => ({ ...x, [k]: v }));
   const dup = f.name.trim() ? findDuplicate(f.name, Number(f.year), id) : undefined;
 
-  const save = () => {
+  const save = async () => {
     if (dup && !window.confirm(`“${dup.name} (${dup.year})” already exists. Save anyway?`)) return;
-    attempt(
+    try {
+      const file = (document.getElementById("title-poster") as HTMLInputElement | null)?.files?.[0];
+      const posterKey = file ? await uploadUserMedia(file, "poster") : f.posterKey;
+      attempt(
       () =>
         saveTitle(
           {
             ...f,
+            posterKey,
             year: Number(f.year),
             people: textToPeople(people),
             slug: f.slug || slugify(`${f.name}-${f.year}`),
           },
           id,
         ),
-      id ? "Title updated" : "Title created",
-    ) && onDone();
+        id ? "Title updated" : "Title created",
+      ) && onDone();
+    } catch (error) {
+      attempt(() => { throw error; });
+    }
   };
 
   return (
@@ -253,6 +261,11 @@ function TitleForm({
             className="w-full"
           />
         </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="title-poster">Poster image</Label>
+        <Input id="title-poster" type="file" accept="image/jpeg,image/png,image/webp" />
+        <p className="text-xs text-subtle">Upload a poster to R2. The generated poster tone is used only when no image is uploaded.</p>
       </div>
       <div className="space-y-1.5">
         <Label>Synopsis</Label>

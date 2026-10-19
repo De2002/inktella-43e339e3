@@ -380,16 +380,16 @@ async function syncContentToD1(db: D1Database, state: DB) {
       try {
         await db
           .prepare(
-            `INSERT INTO titles (id, slug, kind, name, alt_names, year, genres, synopsis, runtime, country, language, trailer_url, people, status, hue, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `INSERT INTO titles (id, slug, kind, name, alt_names, year, genres, synopsis, runtime, country, language, trailer_url, people, status, hue, poster_key, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT(id) DO UPDATE SET slug=excluded.slug, kind=excluded.kind, name=excluded.name, alt_names=excluded.alt_names,
              year=excluded.year, genres=excluded.genres, synopsis=excluded.synopsis, runtime=excluded.runtime, country=excluded.country,
-             language=excluded.language, trailer_url=excluded.trailer_url, people=excluded.people, status=excluded.status, hue=excluded.hue`,
+             language=excluded.language, trailer_url=excluded.trailer_url, people=excluded.people, status=excluded.status, hue=excluded.hue, poster_key=excluded.poster_key`,
           )
           .bind(
             t.id, t.slug, t.kind, t.name, JSON.stringify(t.altNames ?? []), t.year, JSON.stringify(t.genres ?? []),
             t.synopsis, t.runtime ?? null, t.country ?? null, t.language ?? null, t.trailerUrl ?? null,
-            JSON.stringify(t.people ?? []), t.status, t.hue, t.createdAt,
+            JSON.stringify(t.people ?? []), t.status, t.hue, t.posterKey ?? null, t.createdAt,
           )
           .run();
       } catch {}
