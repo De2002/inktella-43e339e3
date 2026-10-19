@@ -8,7 +8,8 @@ import { cn } from "@/lib/utils";
 import { attempt, useAuth } from "@/lib/auth";
 import { deleteAccount, updateProfile, useCurrentUser, useDB } from "@/lib/store";
 import { applyTheme, getThemePref, type ThemePref } from "@/lib/theme";
-import { PageHeader } from "@/components/bits";
+import { Avatar, PageHeader } from "@/components/bits";
+import { uploadUserMedia } from "@/lib/store";
 
 export const Route = createFileRoute("/settings")({
   head: () => ({
@@ -35,6 +36,7 @@ function Settings() {
   const [bio, setBio] = useState("");
   const [favoriteTitleIds, setFavoriteTitleIds] = useState<string[]>(["", "", "", ""]);
   const [showTrail, setShowTrail] = useState(true);
+  const [avatarKey, setAvatarKey] = useState<string | undefined>();
   const db = useDB();
   useEffect(() => setTheme(getThemePref()), []);
   useEffect(() => {
@@ -42,6 +44,7 @@ function Settings() {
       setName(me.displayName);
       setUsername(me.username);
       setBio(me.bio ?? "");
+      setAvatarKey(me.avatarKey);
       setFavoriteTitleIds([...(me.favoriteTitleIds ?? []), "", "", ""].slice(0, 4));
     setShowTrail(me.showTrail !== false);
     }
@@ -62,8 +65,9 @@ function Settings() {
         <p className="py-8 text-muted-foreground"><button className="underline" onClick={() => openAuth()}>Sign in</button> to edit your profile.</p>
       ) : (
         <>
-          <form className="space-y-4 border-b py-8" onSubmit={(e) => { e.preventDefault(); attempt(() => updateProfile(me.id, { displayName: name, username, bio, favoriteTitleIds, showTrail }), "Profile saved"); }}>
+          <form className="space-y-4 border-b py-8" onSubmit={async (e) => { e.preventDefault(); try { const file = (document.getElementById("s-avatar") as HTMLInputElement | null)?.files?.[0]; const nextAvatarKey = file ? await uploadUserMedia(file, "avatar") : avatarKey; setAvatarKey(nextAvatarKey); attempt(() => updateProfile(me.id, { displayName: name, username, bio, avatarKey: nextAvatarKey, favoriteTitleIds, showTrail }), "Profile saved"); } catch (error) { attempt(() => { throw error; }); } }}>
             <h2 className="text-2xl">Profile</h2>
+            <div className="flex items-center gap-4"><Avatar user={{ ...me, avatarKey }} size={64} /><div className="space-y-1.5"><Label htmlFor="s-avatar">Profile picture</Label><Input id="s-avatar" type="file" accept="image/jpeg,image/png,image/webp" /><p className="text-xs text-subtle">Stored securely in R2 and shown across Inktella.</p></div></div>
             <div className="space-y-1.5"><Label htmlFor="s-name">Display name</Label><Input id="s-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} /></div>
             <div className="space-y-1.5"><Label htmlFor="s-user">Username</Label><Input id="s-user" value={username} onChange={(e) => setUsername(e.target.value)} maxLength={30} /></div>
             <div className="space-y-1.5"><Label htmlFor="s-bio">Bio</Label><Textarea id="s-bio" value={bio} onChange={(e) => setBio(e.target.value)} maxLength={300} rows={3} /></div>

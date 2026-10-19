@@ -47,8 +47,14 @@ function Profile() {
   }, [db.trail, db.titles, u.id, u.showTrail]);
 
   const [aiOpen, setAiOpen] = useState(false);
+  const [aiDescription, setAiDescription] = useState("Ella is getting to know this cinephile's unique journey…");
+  const [aiLoading, setAiLoading] = useState(false);
   const watchedCount = watched.length;
-  const aiDescription = `${u.displayName} is drawn to stories with a strong point of view, memorable performances, and details worth talking about. They have watched ${watchedCount} title${watchedCount === 1 ? "" : "s"} on Inktella and enjoy sharing the moments, lessons, and questions that stay with them.`;
+  const loadEllaDescription = async () => {
+    if (aiLoading) return;
+    setAiOpen(true); setAiLoading(true);
+    try { const response = await fetch("/api/ella/personality", { method: "POST" }); const data = await response.json() as { description?: string }; if (data.description) setAiDescription(data.description); } finally { setAiLoading(false); }
+  };
   const stats = [
     { label: "Watched", value: watchedCount, tab: "watched" as const },
     { label: "Collections", value: cols.length, tab: "collections" as const },
@@ -112,10 +118,10 @@ function Profile() {
       )}
 
       <section className="mt-6 border-b pb-5" aria-label="AI profile description">
-        <button type="button" onClick={() => setAiOpen((open) => !open)} aria-expanded={aiOpen} className="flex w-full items-start gap-3 text-left">
+        <button type="button" onClick={() => { if (!aiOpen) void loadEllaDescription(); else setAiOpen(false); }} aria-expanded={aiOpen} className="flex w-full items-start gap-3 text-left">
           <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-medium">AI says I&apos;m…</span>
+            <span className="block text-sm font-medium">Ella says I&apos;m…</span>
             <span className={cn("mt-1 block text-sm leading-6 text-muted-foreground", !aiOpen && "line-clamp-1")}>{aiDescription}</span>
           </span>
           <ChevronDown className={cn("mt-1 size-4 shrink-0 text-muted-foreground transition-transform", aiOpen && "rotate-180")} aria-hidden="true" />

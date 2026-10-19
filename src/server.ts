@@ -171,6 +171,21 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
     }
   }
 
+  if (url.pathname === "/api/ella/personality" && request.method === "POST") {
+    const caller = await verifyCaller();
+    if (caller instanceof Response) return caller;
+    if (!env.DB || !env.ELLA) return json({ error: "Ella is unavailable" }, 503);
+    const state = await readState(env.DB);
+    const user = state.users.find((item) => item.clerkId === caller);
+    if (!user) return json({ error: "Profile not found" }, 404);
+    const favorites = (user.favoriteTitleIds ?? []).map((id) => state.titles.find((title) => title.id === id)?.name).filter(Boolean);
+    const trail = state.trail.filter((item) => item.userId === user.id).slice(-12).map((item) => state.titles.find((title) => title.id === item.titleId)?.name).filter(Boolean);
+    const recommended = state.recommendations.filter((item) => item.userId === user.id).map((item) => state.titles.find((title) => title.id === item.titleId)?.name).filter(Boolean).slice(0, 12);
+    const result = await env.ELLA.run("@cf/meta/llama-3.1-8b-instruct", { messages: [{ role: "system", content: "You are Ella, Inktella's warm and creative cinephile personality guide. Write one unique, positive, vivid third-person description in 2-3 sentences. Never criticize, diagnose, stereotype, or mention missing data. Call the person a cinephile." }, { role: "user", content: JSON.stringify({ name: user.displayName, favouriteFilms: favorites, recommendedFilms: recommended, viewingTrail: trail }) }] });
+    const text = typeof result === "object" && result !== null && "response" in result ? String((result as { response?: unknown }).response ?? "") : String(result ?? "");
+    return json({ description: text.trim() }, 200);
+  }
+
   if (url.pathname === "/api/media" && env.MEDIA && request.method === "POST") {
     const caller = await verifyCaller();
     if (caller instanceof Response) return caller;
