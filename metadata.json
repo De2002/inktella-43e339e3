@@ -1,0 +1,8 @@
+{
+  "name": "Inktella",
+  "description": "A film and series platform featuring editorial recommendations, community reviews, discussion, and catalog exploration.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ],
+  "permissions": []
+}
