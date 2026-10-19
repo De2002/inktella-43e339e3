@@ -41,6 +41,7 @@ export interface CloudflareEnv {
   MEDIA?: R2Bucket;
   CLERK_SECRET_KEY?: string;
   CLERK_WEBHOOK_SIGNING_SECRET?: string;
+  ELLA?: { run(model: string, input: Record<string, unknown>): Promise<unknown> };
 }
 
 /** Nitro passes bindings on the request; direct Wrangler calls pass them as arg 2. */
@@ -51,16 +52,16 @@ export function cloudflareEnv(request: Request, fallback?: unknown): CloudflareE
 
 export async function readAccount(db: D1Database, id: string): Promise<User | null> {
   const row = await db.prepare(
-    "SELECT id, clerk_id, username, email, display_name, role, status, is_pro, bio, created_at FROM users WHERE id = ?",
+    "SELECT id, clerk_id, username, email, display_name, role, status, is_pro, bio, avatar_key, created_at FROM users WHERE id = ?",
   ).bind(id).first<{
     id: string; clerk_id: string; username: string; email: string; display_name: string;
-    role: User["role"]; status: User["status"]; is_pro: number; bio: string | null; created_at: string;
+    role: User["role"]; status: User["status"]; is_pro: number; bio: string | null; avatar_key: string | null; created_at: string;
   }>();
   if (!row) return null;
   return {
     id: row.id, clerkId: row.clerk_id, username: row.username, email: row.email,
     displayName: row.display_name, role: row.role, status: row.status, isPro: Boolean(row.is_pro),
-    bio: row.bio ?? undefined, createdAt: row.created_at, password: "",
+    bio: row.bio ?? undefined, avatarKey: row.avatar_key ?? undefined, createdAt: row.created_at, password: "",
   };
 }
 
@@ -68,14 +69,14 @@ const emptyState = () => createSeed();
 
 type AccountRow = {
   id: string; clerk_id: string | null; username: string; email: string; display_name: string;
-  role: User["role"]; status: User["status"]; is_pro: number; bio: string | null; created_at: string;
+  role: User["role"]; status: User["status"]; is_pro: number; bio: string | null; avatar_key: string | null; created_at: string;
 };
 
 /** Accounts live in the users table; merge them so every signed-up profile is visible. */
 async function mergeAccounts(db: D1Database, state: DB): Promise<DB> {
   try {
     const stmt = db.prepare(
-      "SELECT id, clerk_id, username, email, display_name, role, status, is_pro, bio, created_at FROM users",
+      "SELECT id, clerk_id, username, email, display_name, role, status, is_pro, bio, avatar_key, created_at FROM users",
     ).bind();
     if (!stmt.all) return state;
     const { results } = await stmt.all<AccountRow>();
@@ -87,7 +88,7 @@ async function mergeAccounts(db: D1Database, state: DB): Promise<DB> {
         ...(prev ?? {}),
         id: row.id, clerkId: row.clerk_id ?? undefined, username: row.username, email: row.email,
         displayName: row.display_name, role: row.role, status: row.status, isPro: Boolean(row.is_pro),
-        bio: row.bio ?? prev?.bio, createdAt: row.created_at, password: "",
+        bio: row.bio ?? prev?.bio, avatarKey: row.avatar_key ?? prev?.avatarKey, createdAt: row.created_at, password: "",
       } as User);
     }
     return { ...state, users: [...byId.values()], sessionUserId: null };
@@ -670,10 +671,10 @@ export async function writeState(db: D1Database, state: DB) {
   for (const user of state.users) {
     await db
       .prepare(
-        `INSERT INTO users (id, clerk_id, username, email, display_name, role, status, is_pro, bio, created_at)
+        `INSERT INTO users (id, clerk_id, username, email, display_name, role, status, is_pro, bio, avatar_key, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET clerk_id=COALESCE(excluded.clerk_id, users.clerk_id), username=excluded.username, email=excluded.email, display_name=excluded.display_name,
-      role=excluded.role, status=excluded.status, is_pro=excluded.is_pro, bio=excluded.bio`,
+      role=excluded.role, status=excluded.status, is_pro=excluded.is_pro, bio=excluded.bio, avatar_key=excluded.avatar_key`,
       )
       .bind(
         user.id,
@@ -684,8 +685,9 @@ export async function writeState(db: D1Database, state: DB) {
         user.role,
         user.status,
         user.isPro ? 1 : 0,
-        user.bio ?? null,
-        user.createdAt,
+      user.bio ?? null,
+      user.avatarKey ?? null,
+      user.createdAt,
       )
       .run();
   }
