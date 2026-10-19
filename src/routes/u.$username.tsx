@@ -26,7 +26,19 @@ function Profile() {
   const db = useDB();
   const ready = useStoreReady();
   const [tab, setTab] = useState<"activity" | "collections" | "watched">("activity");
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiDescription, setAiDescription] = useState("Ella is getting to know this cinephile's unique journey…");
+  const [aiLoading, setAiLoading] = useState(false);
   const u = db.users.find((x) => x.username === username);
+  const trail = useMemo(() => {
+    if (!u || u.showTrail === false) return [];
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    return db.trail
+      .filter((entry) => entry.userId === u.id && Date.parse(entry.visitedAt) >= cutoff)
+      .sort((a, b) => b.visitedAt.localeCompare(a.visitedAt))
+      .map((entry) => db.titles.find((title) => title.id === entry.titleId))
+      .filter(Boolean);
+  }, [db.trail, db.titles, u?.id, u?.showTrail]);
   if (!u) return <Empty>{ready ? "No one goes by that name here." : "Loading profile…"}</Empty>;
 
   const activity = [
@@ -36,19 +48,6 @@ function Profile() {
   ].sort((a, b) => b.at.localeCompare(a.at));
   const cols = db.collections.filter((c) => c.userId === u.id);
   const watched = db.library.filter((l) => l.userId === u.id && l.state === "watched").map((l) => db.titles.find((t) => t.id === l.titleId)).filter(Boolean);
-  const trail = useMemo(() => {
-    if (u.showTrail === false) return [];
-    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    return db.trail
-      .filter((entry) => entry.userId === u.id && Date.parse(entry.visitedAt) >= cutoff)
-      .sort((a, b) => b.visitedAt.localeCompare(a.visitedAt))
-      .map((entry) => db.titles.find((title) => title.id === entry.titleId))
-      .filter(Boolean);
-  }, [db.trail, db.titles, u.id, u.showTrail]);
-
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiDescription, setAiDescription] = useState("Ella is getting to know this cinephile's unique journey…");
-  const [aiLoading, setAiLoading] = useState(false);
   const watchedCount = watched.length;
   const loadEllaDescription = async () => {
     if (aiLoading) return;
