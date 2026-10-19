@@ -39,27 +39,41 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
     return json({ ok: true });
   }
 
-  if (url.pathname === "/api/db" && env.DB) {
-    if (request.method === "GET") return json(await readState(env.DB));
-    if (request.method === "PUT") {
-      await writeState(env.DB, (await request.json()) as import("./lib/types").DB);
-      return json({ ok: true });
+  /** Verifies the Clerk session token server-side; returns the Clerk user id or an error response. */
+  const verifyCaller = async (): Promise<string | Response> => {
+    if (!env.CLERK_SECRET_KEY) return json({ error: "Sign-in is not configured: CLERK_SECRET_KEY is missing from this Worker." }, 503);
+    const authorization = request.headers.get("authorization");
+    const token = authorization?.startsWith("Bearer ") ? authorization.slice(7) : null;
+    if (!token) return json({ error: "Authentication required" }, 401);
+    try {
+      const claims = await verifyToken(token, { secretKey: env.CLERK_SECRET_KEY, authorizedParties: [url.origin] });
+      return claims.sub;
+    } catch {
+      return json({ error: "Your session expired. Please sign in again." }, 401);
+    }
+  };
+
+  if (url.pathname === "/api/db") {
+    if (!env.DB) return json({ error: "Cloudflare D1 binding DB is missing from this Worker." }, 503);
+    try {
+      if (request.method === "GET") return json(await readState(env.DB));
+      if (request.method === "PUT") {
+        const caller = await verifyCaller();
+        if (caller instanceof Response) return caller;
+        await writeState(env.DB, (await request.json()) as import("./lib/types").DB);
+        return json({ ok: true });
+      }
+    } catch (error) {
+      console.error("[api/db] D1 failed", error instanceof Error ? error.message : error);
+      return json({ error: "Database error. Apply the D1 migrations and check the DB binding." }, 503);
     }
   }
 
   if (url.pathname === "/api/auth/sync" && request.method === "POST") {
     if (!env.DB) return json({ error: "Your account cannot connect: Cloudflare D1 binding DB is missing." }, 503);
-    const authorization = request.headers.get("authorization");
-    const token = authorization?.startsWith("Bearer ") ? authorization.slice(7) : null;
-    if (!env.CLERK_SECRET_KEY) return json({ error: "Sign-in is not configured: CLERK_SECRET_KEY is missing from this Worker." }, 503);
-    if (!token) return json({ error: "Authentication required" }, 401);
-    let clerkId: string;
-    try {
-      const claims = await verifyToken(token, { secretKey: env.CLERK_SECRET_KEY, authorizedParties: [url.origin] });
-      clerkId = claims.sub;
-    } catch {
-      return json({ error: "Invalid Clerk session" }, 401);
-    }
+    const caller = await verifyCaller();
+    if (caller instanceof Response) return caller;
+    const clerkId = caller;
     // Identity comes from Clerk, never from a browser-supplied email or name.
     const { attachClerkUser, readAccount } = await import("./lib/cloudflare");
     try {

@@ -103,7 +103,7 @@ export async function writeState(db: D1Database, state: DB) {
     .prepare(
       "UPDATE app_state SET version = ?, payload = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1",
     )
-    .bind(state.version, JSON.stringify(state))
+    .bind(state.version, JSON.stringify({ ...state, sessionUserId: null, users: state.users.map((u) => ({ ...u, password: "" })) }))
     .run();
   for (const user of state.users) {
     await db
