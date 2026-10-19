@@ -29,15 +29,25 @@ export function DiscoveryBlurb({ title }: { title: Title }) {
   const activeTag = tagId ? db.discoveryTags.find((tag) => tag.id === tagId) : undefined;
   const results = useMemo(() => {
     if (!activeTag) return [];
+
+    // A title can be connected to a discovery tag through the explicit catalog
+    // assignment or through another approved intent link. Supporting both keeps
+    // the sheet aligned with the same internal tag set used by admin discovery.
     const matchingTitleIds = new Set(
       db.titleDiscoveryTags
         .filter((item) => item.tagId === activeTag.id && item.titleId !== title.id)
         .map((item) => item.titleId),
     );
+    for (const link of db.intentLinks) {
+      if (link.tagId === activeTag.id && link.approvalStatus === "approved" && link.titleId !== title.id) {
+        matchingTitleIds.add(link.titleId);
+      }
+    }
+
     return db.titles.filter(
       (candidate) => matchingTitleIds.has(candidate.id) && candidate.status === "published",
     );
-  }, [activeTag, db.titleDiscoveryTags, db.titles, title.id]);
+  }, [activeTag, db.intentLinks, db.titleDiscoveryTags, db.titles, title.id]);
   return (
     <>
       <p className="mt-5 leading-relaxed">
