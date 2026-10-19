@@ -50,7 +50,7 @@ export function DiscoveryBlurb({ title }: { title: Title }) {
             <DrawerDescription>{activeTag?.description ?? "Discover related movies and series."}</DrawerDescription>
           </DrawerHeader>
           <div className="mx-auto grid w-full max-w-2xl grid-cols-2 gap-3 overflow-y-auto px-4 pb-8 pt-2 sm:grid-cols-3">
-            {results.length >= 2 ? results.map((candidate) => <TitleLink key={candidate.id} title={candidate} className="group flex flex-col gap-2"><Poster title={candidate} size="md" className="w-full transition-transform group-hover:-translate-y-1" /><span className="text-sm font-medium">{candidate.name}</span><span className="text-xs text-muted-foreground">{candidate.year} · {candidate.kind}</span></TitleLink>) : <p className="col-span-full py-8 text-center text-sm text-muted-foreground">More stories will appear here as the catalog grows.</p>}
+            {results.length > 0 ? results.map((candidate) => <TitleLink key={candidate.id} title={candidate} className="group flex flex-col gap-2"><Poster title={candidate} size="md" className="w-full transition-transform group-hover:-translate-y-1" /><span className="text-sm font-medium">{candidate.name}</span><span className="text-xs text-muted-foreground">{candidate.year} · {candidate.kind}</span></TitleLink>) : <p className="col-span-full py-8 text-center text-sm text-muted-foreground">More stories will appear here as the catalog grows.</p>}
           </div>
         </DrawerContent>
       </Drawer>
