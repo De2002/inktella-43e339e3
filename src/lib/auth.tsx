@@ -1,7 +1,7 @@
 import { useAuth as useClerkAuth, useClerk, useUser } from "@clerk/tanstack-react-start";
 import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode } from "react";
 import { toast } from "sonner";
-import { getDB, setSessionUserId, syncSessionUser } from "./store";
+import { getDB, setAuthTokenGetter, setSessionUserId, syncSessionUser } from "./store";
 import type { User } from "./types";
 
 type Mode = "signin" | "signup";
@@ -31,9 +31,11 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isLoaded) return;
     if (!isSignedIn || !user) {
+      setAuthTokenGetter(null);
       setSessionUserId(null);
       return;
     }
+    setAuthTokenGetter(() => getToken());
     let cancelled = false;
     const controller = new AbortController();
     void (async () => {
@@ -70,8 +72,10 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const openAuth = useCallback((mode: Mode = "signin") => {
-    const options = { signInForceRedirectUrl: window.location.href, signUpForceRedirectUrl: window.location.href };
-    const redirect = mode === "signup" ? clerk.redirectToSignUp(options) : clerk.redirectToSignIn(options);
+    const back = window.location.href;
+    const redirect = mode === "signup"
+      ? clerk.redirectToSignUp({ signUpForceRedirectUrl: back, signInForceRedirectUrl: back })
+      : clerk.redirectToSignIn({ signInForceRedirectUrl: back, signUpForceRedirectUrl: back });
     void redirect.catch(() => toast.error("Sign-in couldn't open. Please try again."));
   }, [clerk]);
 
