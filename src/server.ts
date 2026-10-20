@@ -196,7 +196,7 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
         "Use only the evidence supplied. Do not invent preferences, criticize, diagnose, stereotype, or mention missing data.",
         JSON.stringify({ name: user.displayName, favouriteFilms: favorites, recommendedFilms: recommended, viewingTrail: trail }),
       ].join("\n");
-      result = await env.ELLA.run("@cf/meta/llama-3.1-8b-instruct", { prompt });
+      result = await env.ELLA.run("@cf/google/gemma-4-26b-a4b-it", { prompt });
     } catch (error) {
       console.error("[v0] Ella Worker AI failed", error);
       const message = error instanceof Error ? error.message : "Unknown Worker AI error";
