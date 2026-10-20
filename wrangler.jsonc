@@ -9,5 +9,6 @@
     "database_id": "b87eefa1-59f4-4e17-a78a-265354c5213d",
     "migrations_dir": "migrations"
   }],
-  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "inktella" }]
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "inktella" }],
+  "ai": { "binding": "ELLA" }
 }
