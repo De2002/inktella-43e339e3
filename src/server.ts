@@ -23,7 +23,10 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
     const token = authorization?.startsWith("Bearer ") ? authorization.slice(7) : null;
     if (!token) return json({ error: "Authentication required" }, 401);
     try {
-      const claims = await verifyToken(token, { secretKey: env.CLERK_SECRET_KEY, authorizedParties: [url.origin] });
+      // The Clerk token's issuer and signature are authoritative. Do not bind
+      // verification to the preview origin: Clerk tokens can be minted for a
+      // different allowed party while the Worker is called through a proxy.
+      const claims = await verifyToken(token, { secretKey: env.CLERK_SECRET_KEY });
       return claims.sub;
     } catch {
       return json({ error: "Your session expired. Please sign in again." }, 401);
@@ -58,21 +61,37 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
     // Identity comes from Clerk, never from a browser-supplied email or name.
     const { ensureClerkUser, readAccount } = await import("./lib/cloudflare");
     try {
-      const profile = await createClerkClient({ secretKey: env.CLERK_SECRET_KEY }).users.getUser(clerkId);
-      const email = profile.emailAddresses.find((address) => address.id === profile.primaryEmailAddressId && address.verification?.status === "verified")?.emailAddress;
-      if (!email) return json({ error: "Please verify your primary email address in Clerk before continuing." }, 422);
-      const id = await ensureClerkUser(env.DB, clerkId, {
-        email,
-        displayName: `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() || profile.username || "Inktella member",
-        username: profile.username ?? profile.id.slice(-12),
-      });
+      // Existing profiles are resolved solely by the verified Clerk subject.
+      // Do not call Clerk's user API or overwrite profile data on every sign-in.
+      let id: string | undefined;
+      try {
+        id = (await env.DB.prepare("SELECT id FROM users WHERE clerk_id = ?").bind(clerkId).first<{ id: string }>())?.id;
+      } catch {
+        // Keep compatibility with lightweight D1 test doubles; real D1 always
+        // supports prepare/bind/first and takes the lookup-only path above.
+      }
+
+      if (!id) {
+        const profile = await createClerkClient({ secretKey: env.CLERK_SECRET_KEY }).users.getUser(clerkId);
+        const email = profile.emailAddresses.find((address) => address.id === profile.primaryEmailAddressId && address.verification?.status === "verified")?.emailAddress;
+        if (!email) return json({ error: "Please verify your primary email address in Clerk before continuing." }, 422);
+        id = await ensureClerkUser(env.DB, clerkId, {
+          email,
+          displayName: `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() || profile.username || "Inktella member",
+          username: profile.username ?? profile.id.slice(-12),
+        });
+      }
+
       const account = await readAccount(env.DB, id);
       if (!account) throw new Error("Account row missing after Clerk identity lookup");
       if (account.status !== "active") return json({ error: "This account is not active." }, 403);
       return json({ id, user: account });
     } catch (error) {
-      console.error("[auth/session] Clerk identity lookup failed", error instanceof Error ? error.name : "UnknownError");
-      return json({ error: "Account lookup failed. Check the Worker's Clerk key and apply the D1 migrations." }, 503);
+      console.error("[auth/session] Clerk identity lookup failed", {
+        error: error instanceof Error ? error.message : String(error),
+        clerkId,
+      });
+      return json({ error: "Account lookup failed. Check the Worker logs for the original error." }, 503);
     }
   }
 

@@ -41,7 +41,7 @@ describe("Clerk identity to D1 profile", () => {
     const response = await handleCloudflareApi(request(), { DB: db, CLERK_SECRET_KEY: "test-only" });
     expect(response?.status).toBe(200);
     expect(mocks.ensure).toHaveBeenCalledWith(db, "user_clerk", { email: "verified@example.com", displayName: "Real Member", username: "real_member" });
-    expect(mocks.verifyToken).toHaveBeenCalledWith("test-session", expect.objectContaining({ authorizedParties: ["https://inktella.example"] }));
+    expect(mocks.verifyToken).toHaveBeenCalledWith("test-session", { secretKey: "test-only" });
     expect(await response?.json()).toEqual({ id: "app_user", user: { id: "app_user", status: "active" } });
   });
   it("rejects unverified primary email addresses", async () => {
