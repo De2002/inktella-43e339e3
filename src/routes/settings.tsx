@@ -6,8 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { attempt, useAuth } from "@/lib/auth";
-import { useAuth as useClerkAuth } from "@clerk/tanstack-react-start";
-import { deleteAccount, updateProfile, useCurrentUser, useDB } from "@/lib/store";
+import { deleteAccount, getAuthToken, updateProfile, useCurrentUser, useDB } from "@/lib/store";
 import { applyTheme, getThemePref, type ThemePref } from "@/lib/theme";
 import { Avatar, PageHeader } from "@/components/bits";
 import { uploadUserMedia } from "@/lib/store";
@@ -30,7 +29,6 @@ export const Route = createFileRoute("/settings")({
 function Settings() {
   const me = useCurrentUser();
   const { openAuth } = useAuth();
-  const { getToken } = useClerkAuth();
   const navigate = useNavigate();
   const [theme, setTheme] = useState<ThemePref>("system");
   const [name, setName] = useState("");
@@ -101,10 +99,11 @@ function Settings() {
                 if (me.ellaGeneratedAt && Date.now() - Date.parse(me.ellaGeneratedAt) < 30 * 24 * 60 * 60 * 1000) return;
                 setEllaGenerating(true);
                 try {
-                  const token = await getToken();
+                  const token = await getAuthToken();
                   if (!token) throw new Error("Your sign-in session is not ready. Please try again.");
-                  const response = await fetch("/api/ella/personality", { method: "POST", headers: { authorization: `Bearer ${token}` } });
-                  const data = await response.json() as { description?: string; error?: string };
+                  const response = await fetch("/api/ella/personality", { method: "POST", headers: { authorization: `Bearer ${token}`, accept: "application/json" } });
+                  const contentType = response.headers.get("content-type") ?? "";
+                  const data = contentType.includes("application/json") ? await response.json() as { description?: string; error?: string } : { error: `Ella is unavailable at this address (${response.status}). Please try again after the Worker API is deployed.` };
                   if (!response.ok || !data.description) throw new Error(data.error ?? "Ella could not generate a description yet.");
                   updateProfile(me.id, { displayName: name, username, bio, avatarKey, favoriteTitleIds, showTrail, ellaEnabled, ellaDescription: data.description, ellaGeneratedAt: new Date().toISOString() });
                 } catch (error) { attempt(() => { throw error; }); } finally { setEllaGenerating(false); }
