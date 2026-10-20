@@ -221,7 +221,7 @@ export function recordTrailVisit(userId: string, titleId: string) {
 
 export function updateProfile(
   userId: string,
-  p: { displayName: string; username: string; bio?: string; avatarKey?: string; favoriteTitleIds?: string[]; showTrail?: boolean }, 
+  p: { displayName: string; username: string; bio?: string; avatarKey?: string; favoriteTitleIds?: string[]; showTrail?: boolean; ellaEnabled?: boolean; ellaDescription?: string; ellaGeneratedAt?: string }, 
 ) {
   const username = slugify(p.username).replace(/-/g, "_");
   const favoriteTitleIds = [...new Set((p.favoriteTitleIds ?? []).filter(Boolean))].slice(0, 4);
@@ -236,6 +236,9 @@ export function updateProfile(
     u.avatarKey = p.avatarKey || u.avatarKey;
     u.favoriteTitleIds = favoriteTitleIds;
     u.showTrail = p.showTrail ?? true;
+    if (p.ellaEnabled !== undefined) u.ellaEnabled = p.ellaEnabled;
+    if (p.ellaDescription !== undefined) u.ellaDescription = p.ellaDescription;
+    if (p.ellaGeneratedAt !== undefined) u.ellaGeneratedAt = p.ellaGeneratedAt;
   });
 }
 

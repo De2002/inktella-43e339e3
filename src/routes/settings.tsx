@@ -36,6 +36,8 @@ function Settings() {
   const [bio, setBio] = useState("");
   const [favoriteTitleIds, setFavoriteTitleIds] = useState<string[]>(["", "", "", ""]);
   const [showTrail, setShowTrail] = useState(true);
+  const [ellaEnabled, setEllaEnabled] = useState(true);
+  const [ellaGenerating, setEllaGenerating] = useState(false);
   const [avatarKey, setAvatarKey] = useState<string | undefined>();
   const db = useDB();
   useEffect(() => setTheme(getThemePref()), []);
@@ -46,7 +48,8 @@ function Settings() {
       setBio(me.bio ?? "");
       setAvatarKey(me.avatarKey);
       setFavoriteTitleIds([...(me.favoriteTitleIds ?? []), "", "", ""].slice(0, 4));
-    setShowTrail(me.showTrail !== false);
+      setShowTrail(me.showTrail !== false);
+      setEllaEnabled(me.ellaEnabled !== false);
     }
   }, [me?.id]);
 
@@ -90,7 +93,20 @@ function Settings() {
                 ))}
               </div>
             </fieldset>
-            <Button type="submit" className="rounded-full">Save</Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button type="submit" className="rounded-full">Save</Button>
+              <Button type="button" variant="outline" className="rounded-full" disabled={ellaGenerating} onClick={async () => {
+                if (me.ellaGeneratedAt && Date.now() - Date.parse(me.ellaGeneratedAt) < 30 * 24 * 60 * 60 * 1000) return;
+                setEllaGenerating(true);
+                try {
+                  const response = await fetch("/api/ella/personality", { method: "POST" });
+                  const data = await response.json() as { description?: string; error?: string };
+                  if (!response.ok || !data.description) throw new Error(data.error ?? "Ella could not generate a description yet.");
+                  updateProfile(me.id, { displayName: name, username, bio, avatarKey, favoriteTitleIds, showTrail, ellaEnabled, ellaDescription: data.description, ellaGeneratedAt: new Date().toISOString() });
+                } catch (error) { attempt(() => { throw error; }); } finally { setEllaGenerating(false); }
+              }}>{ellaGenerating ? "Ella is writing…" : me.ellaGeneratedAt && Date.now() - Date.parse(me.ellaGeneratedAt) < 30 * 24 * 60 * 60 * 1000 ? "Available monthly" : "Generate with Ella"}</Button>
+            </div>
+            <label className="flex items-center gap-3 text-sm text-muted-foreground"><input type="checkbox" checked={ellaEnabled} onChange={(e) => { setEllaEnabled(e.target.checked); updateProfile(me.id, { displayName: name, username, bio, avatarKey, favoriteTitleIds, showTrail, ellaEnabled: e.target.checked }); }} /> Show Ella&apos;s description on my profile</label>
           </form>
           <section className="space-y-3 py-8">
             <h2 className="text-2xl">Account</h2>

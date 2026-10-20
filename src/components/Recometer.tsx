@@ -67,8 +67,8 @@ export function Recometer({ title }: { title: Title }) {
             <div className="bg-muted-foreground/40 transition-all" style={{ width: `${noPct}%` }} />
           </div>
           <div className={publicView ? "mt-4 flex justify-between text-base" : "mt-2 flex justify-between text-sm"}>
-            <span><strong className={publicView ? "font-display text-3xl text-primary" : ""}>{yesPct}%</strong>{!publicView && <span className="text-muted-foreground"> Would recommend</span>}</span>
-            <span>{!publicView && <span className="text-muted-foreground">Wouldn&apos;t recommend </span>}<strong className={publicView ? "font-display text-3xl text-primary" : ""}>{noPct}%</strong></span>
+            <span><strong className={publicView ? "font-display text-3xl text-primary" : ""}>{yesPct}%</strong><span className={publicView ? "ml-1 font-hand text-sm text-muted-foreground" : "text-muted-foreground"}> Would recommend</span></span>
+            <span><span className={publicView ? "mr-1 font-hand text-sm text-muted-foreground" : "text-muted-foreground"}>Wouldn&apos;t recommend </span><strong className={publicView ? "font-display text-3xl text-primary" : ""}>{noPct}%</strong></span>
           </div>
         </>
       ) : publicView ? (

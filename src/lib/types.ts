@@ -169,6 +169,9 @@ export interface User {
   avatarKey?: string;
   favoriteTitleIds?: string[];
   showTrail?: boolean;
+  ellaEnabled?: boolean;
+  ellaDescription?: string;
+  ellaGeneratedAt?: string;
   isPro?: boolean;
   role: "user" | "admin";
   status: "active" | "suspended" | "banned";

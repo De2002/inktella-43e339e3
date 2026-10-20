@@ -30,7 +30,7 @@ function Profile() {
   const ready = useStoreReady();
   const [tab, setTab] = useState<"activity" | "collections" | "watched">("activity");
   const [aiOpen, setAiOpen] = useState(false);
-  const [aiDescription, setAiDescription] = useState("Ella is getting to know this cinephile's unique journey…");
+  const [aiDescription, setAiDescription] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const profileUsername = canonicalUsername(username);
   const u = db.users.find((x) => canonicalUsername(x.username) === profileUsername);
@@ -173,16 +173,16 @@ function Profile() {
         </section>
       ) : null}
 
-      <section className="mt-6 border-b pb-5" aria-label="AI profile description">
+      {u.ellaEnabled !== false && u.ellaDescription ? <section className="mt-6 border-b pb-5" aria-label="AI profile description">
         <button type="button" onClick={() => { if (!aiOpen) void loadEllaDescription(); else setAiOpen(false); }} aria-expanded={aiOpen} className="flex w-full items-start gap-3 text-left">
           <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-medium">Ella says I&apos;m…</span>
-            <span className={cn("mt-1 block text-sm leading-6 text-muted-foreground", !aiOpen && "line-clamp-1")}>{aiDescription}</span>
+            <span className={cn("mt-1 block text-sm leading-6 text-muted-foreground", !aiOpen && "line-clamp-1")}>{aiDescription || u.ellaDescription}</span>
           </span>
           <ChevronDown className={cn("mt-1 size-4 shrink-0 text-muted-foreground transition-transform", aiOpen && "rotate-180")} aria-hidden="true" />
         </button>
-      </section>
+      </section> : null}
 
       <nav className="mt-5 flex gap-6 border-b" aria-label="Profile sections">
         {(["activity", "collections", "watched"] as const).map((k) => (
