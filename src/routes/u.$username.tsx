@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ChevronDown, Sparkles } from "lucide-react";
+import { ChevronDown, Sparkles, UserPlus, UserRoundCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { canonicalUsername, useDB, useStoreReady } from "@/lib/store";
+import { attempt, useAuth } from "@/lib/auth";
+import { canonicalUsername, toggleFollow, useCurrentUser, useDB, useStoreReady } from "@/lib/store";
 import { Avatar, Empty, Poster, TitleLink } from "@/components/bits";
 import { PostItem, QuestionCard, ReviewCard } from "@/components/FeedItems";
 import { CollectionCard } from "@/components/CollectionCard";
@@ -24,6 +25,8 @@ export const Route = createFileRoute("/u/$username")({
 function Profile() {
   const { username } = Route.useParams();
   const db = useDB();
+  const viewer = useCurrentUser();
+  const { requireAuth } = useAuth();
   const ready = useStoreReady();
   const [tab, setTab] = useState<"activity" | "collections" | "watched">("activity");
   const [aiOpen, setAiOpen] = useState(false);
@@ -50,6 +53,23 @@ function Profile() {
   const cols = db.collections.filter((c) => c.userId === u.id);
   const watched = db.library.filter((l) => l.userId === u.id && l.state === "watched").map((l) => db.titles.find((t) => t.id === l.titleId)).filter(Boolean);
   const watchedCount = watched.length;
+  const viewerWatched = new Set(db.library.filter((entry) => entry.userId === viewer?.id && entry.state === "watched").map((entry) => entry.titleId));
+  const ownerWatched = new Set(db.library.filter((entry) => entry.userId === u.id && entry.state === "watched").map((entry) => entry.titleId));
+  const sharedTitleIds = [...ownerWatched].filter((titleId) => viewerWatched.has(titleId));
+  const viewerFavorites = new Set(viewer?.favoriteTitleIds ?? []);
+  const ownerFavorites = new Set(u.favoriteTitleIds ?? []);
+  const sharedFavorites = [...ownerFavorites].filter((titleId) => viewerFavorites.has(titleId));
+  const ownerCollections = db.collections.filter((collection) => collection.userId === u.id);
+  const viewerCollections = db.collections.filter((collection) => collection.userId === viewer?.id);
+  const ownerCollectionTitles = new Set(ownerCollections.flatMap((collection) => collection.titleIds));
+  const viewerCollectionTitles = new Set(viewerCollections.flatMap((collection) => collection.titleIds));
+  const sharedCollectionTitles = [...ownerCollectionTitles].filter((titleId) => viewerCollectionTitles.has(titleId));
+  const sharedRecommendations = db.recommendations.filter((vote) => vote.userId === u.id && vote.value === "yes" && db.recommendations.some((other) => other.userId === viewer?.id && other.titleId === vote.titleId && other.value === "yes")).map((vote) => vote.titleId);
+  const comparableTitles = new Set([...ownerWatched, ...ownerFavorites, ...ownerCollectionTitles]);
+  const hasEnoughActivity = Boolean(viewer && (viewerWatched.size + viewerFavorites.size + viewerCollectionTitles.size > 0) && comparableTitles.size >= 2);
+  const matchScore = hasEnoughActivity ? Math.min(99, Math.round(((sharedTitleIds.length + sharedFavorites.length * 1.5 + sharedCollectionTitles.length + sharedRecommendations.length * 2) / Math.max(1, comparableTitles.size + viewerWatched.size) * 100))) : null;
+  const followed = Boolean(viewer && db.follows.some((follow) => follow.followerId === viewer.id && follow.followingId === u.id));
+  const sharedTitles = sharedTitleIds.slice(0, 4).map((titleId) => db.titles.find((title) => title.id === titleId)).filter(Boolean);
   const loadEllaDescription = async () => {
     if (aiLoading) return;
     setAiOpen(true); setAiLoading(true);
@@ -116,6 +136,33 @@ function Profile() {
           </div>
         </section>
       )}
+
+      {viewer && viewer.id !== u.id ? (
+        <section className="mt-7 border-b pb-7" aria-labelledby="follow-along-heading">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-primary">A shared way in</p>
+              <h2 id="follow-along-heading" className="mt-1 font-display text-2xl">Follow Along</h2>
+            </div>
+            <button type="button" onClick={() => requireAuth(() => attempt(() => toggleFollow(u.id), followed ? "Unfollowed." : "Now following."), "Sign in to follow this cinephile.")} className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary/40 px-3 py-2 text-xs font-medium transition-colors hover:bg-primary hover:text-primary-foreground" aria-label={followed ? `Following ${u.displayName}` : `Follow ${u.displayName}`}>
+              {followed ? <UserRoundCheck className="size-3.5" aria-hidden="true" /> : <UserPlus className="size-3.5" aria-hidden="true" />}
+              {followed ? "Following" : "Follow"}
+            </button>
+          </div>
+          {matchScore !== null ? (
+            <div className="mt-5 animate-in fade-in slide-in-from-bottom-1 duration-500">
+              <div className="flex items-end gap-3">
+                <span className="font-display text-5xl leading-none text-primary">{matchScore}%</span>
+                <p className="pb-1 text-sm text-muted-foreground">taste match</p>
+              </div>
+              <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
+                {sharedRecommendations.length > 0 ? "You both champion some of the same discoveries." : sharedTitleIds.length > 0 ? `You have ${sharedTitleIds.length} watched ${sharedTitleIds.length === 1 ? "title" : "titles"} in common.` : "Your collections and favourites are beginning to overlap."}
+              </p>
+              {sharedTitles.length > 0 && <div className="mt-4 flex gap-2" aria-label="Shared watched titles">{sharedTitles.map((title) => title && <TitleLink key={title.id} title={title} aria-label={title.name}><Poster title={title} size="xs" className="w-12 rounded-md" /></TitleLink>)}</div>}
+            </div>
+          ) : <p className="mt-4 text-sm leading-6 text-muted-foreground">There is not quite enough shared activity to make a meaningful comparison yet. Keep exploring and this will become more personal.</p>}
+        </section>
+      ) : null}
 
       <section className="mt-6 border-b pb-5" aria-label="AI profile description">
         <button type="button" onClick={() => { if (!aiOpen) void loadEllaDescription(); else setAiOpen(false); }} aria-expanded={aiOpen} className="flex w-full items-start gap-3 text-left">

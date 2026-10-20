@@ -243,6 +243,7 @@ export function createSeed(): DB {
       { id: "c3", slug: "series-with-unforgettable-endings", userId: "u-tom", name: "Series With Unforgettable Endings", titleIds: ["t-breaking-bad", "t-fleabag", "t-dark"], createdAt: d(7), updatedAt: d(11) },
     ],
     savedCollections: [{ userId: "u-sana", collectionId: "c1" }],
+    follows: [],
     library: [
       { userId: "u-amara", titleId: "t-interstellar", state: "watched", updatedAt: d(12) },
       { userId: "u-amara", titleId: "t-dark", state: "want", updatedAt: d(12) },
