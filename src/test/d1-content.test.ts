@@ -59,7 +59,7 @@ describe("Cloudflare D1 Content Persistence", () => {
       removed: 0,
     };
 
-    const mockDb: D1Database = {
+    const mockDb = {
       prepare: (query: string) => {
         return {
           bind: () => ({
@@ -79,7 +79,7 @@ describe("Cloudflare D1 Content Persistence", () => {
           }),
         };
       },
-    };
+    } as unknown as D1Database;
 
     const state = await readState(mockDb);
     const found = state.posts.find((p) => p.id === "p-d1-custom");
@@ -128,7 +128,7 @@ describe("Cloudflare D1 Content Persistence", () => {
     expect(inMem).toBeDefined();
     expect(typeof inMem.prepare).toBe("function");
 
-    const posts = await inMem.prepare("SELECT id FROM posts").bind().all<{ id: string }>();
+    const posts = await inMem.prepare("SELECT id FROM posts").bind().all!<{ id: string }>();
     expect(posts.results.length).toBeGreaterThan(0);
 
     const firstPost = await d1QueryFirst<{ id: string }>(inMem, "SELECT id FROM posts");
