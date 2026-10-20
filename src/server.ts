@@ -190,10 +190,17 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
     const recommended = state.recommendations.filter((item) => item.userId === user.id).map((item) => state.titles.find((title) => title.id === item.titleId)?.name).filter(Boolean).slice(0, 12);
     let result;
     try {
-      result = await env.ELLA.run("@cf/meta/llama-3.1-8b-instruct", { messages: [{ role: "system", content: "Write a concise, distinctive movie taste description for an Inktella profile. Use only the evidence supplied. Do not invent preferences, criticize, diagnose, stereotype, or mention missing data. Write 2-3 warm, vivid third-person sentences and call the person a cinephile." }, { role: "user", content: JSON.stringify({ name: user.displayName, favouriteFilms: favorites, recommendedFilms: recommended, viewingTrail: trail }) }] });
+      const prompt = [
+        "You are Ella, Inktella's movie taste writer.",
+        "Write 2-3 warm, vivid third-person sentences describing this cinephile's taste.",
+        "Use only the evidence supplied. Do not invent preferences, criticize, diagnose, stereotype, or mention missing data.",
+        JSON.stringify({ name: user.displayName, favouriteFilms: favorites, recommendedFilms: recommended, viewingTrail: trail }),
+      ].join("\n");
+      result = await env.ELLA.run("@cf/meta/llama-3.1-8b-instruct", { prompt });
     } catch (error) {
       console.error("[v0] Ella Worker AI failed", error);
-      return json({ error: "Ella could not complete the description right now." }, 502);
+      const message = error instanceof Error ? error.message : "Unknown Worker AI error";
+      return json({ error: `Ella could not complete the description right now: ${message}` }, 502);
     }
     const text = typeof result === "object" && result !== null && "response" in result ? String((result as { response?: unknown }).response ?? "") : String(result ?? "");
     if (!text.trim()) return json({ error: "Ella returned an empty description. Please try again." }, 502);
