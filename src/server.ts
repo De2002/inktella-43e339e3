@@ -188,7 +188,13 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
     if (favorites.length + watched.length + collections.length < 3) return json({ error: "Ella needs a little more profile activity before she can make the call." }, 422);
     const trail = state.trail.filter((item) => item.userId === user.id).slice(-12).map((item) => state.titles.find((title) => title.id === item.titleId)?.name).filter(Boolean);
     const recommended = state.recommendations.filter((item) => item.userId === user.id).map((item) => state.titles.find((title) => title.id === item.titleId)?.name).filter(Boolean).slice(0, 12);
-    const result = await env.ELLA.run("@cf/meta/llama-3.1-8b-instruct", { messages: [{ role: "system", content: "Write a concise, distinctive movie taste description for an Inktella profile. Use only the evidence supplied. Do not invent preferences, criticize, diagnose, stereotype, or mention missing data. Write 2-3 warm, vivid third-person sentences and call the person a cinephile." }, { role: "user", content: JSON.stringify({ name: user.displayName, favouriteFilms: favorites, recommendedFilms: recommended, viewingTrail: trail }) }] });
+    let result;
+    try {
+      result = await env.ELLA.run("@cf/meta/llama-3.1-8b-instruct", { messages: [{ role: "system", content: "Write a concise, distinctive movie taste description for an Inktella profile. Use only the evidence supplied. Do not invent preferences, criticize, diagnose, stereotype, or mention missing data. Write 2-3 warm, vivid third-person sentences and call the person a cinephile." }, { role: "user", content: JSON.stringify({ name: user.displayName, favouriteFilms: favorites, recommendedFilms: recommended, viewingTrail: trail }) }] });
+    } catch (error) {
+      console.error("[v0] Ella Worker AI failed", error);
+      return json({ error: "Ella could not complete the description right now." }, 502);
+    }
     const text = typeof result === "object" && result !== null && "response" in result ? String((result as { response?: unknown }).response ?? "") : String(result ?? "");
     if (!text.trim()) return json({ error: "Ella returned an empty description. Please try again." }, 502);
     return json({ description: text.trim() }, 200);

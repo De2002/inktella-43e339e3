@@ -25,6 +25,10 @@ export function setAuthTokenGetter(fn: (() => Promise<string | null>) | null) {
   tokenGetter = fn;
 }
 
+export function getAuthToken() {
+  return tokenGetter?.() ?? Promise.resolve(null);
+}
+
 function markReady() {
   ready = true;
   readyListeners.forEach((l) => l());
