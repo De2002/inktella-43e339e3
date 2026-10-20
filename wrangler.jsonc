@@ -6,7 +6,7 @@
   "d1_databases": [{
     "binding": "DB",
     "database_name": "inktella",
-    "database_id": "b87eefa1-59f4-4e17-a78a-265354c5213d",
+    "database_id": "deb57b46-c9ee-4763-8aad-aef7d2a43f4d",
     "migrations_dir": "migrations"
   }],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "inktella" }],
