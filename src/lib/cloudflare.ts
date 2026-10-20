@@ -695,7 +695,7 @@ export async function writeState(db: D1Database, state: DB) {
   await syncContentToD1(db, state);
 }
 
-export async function attachClerkUser(
+export async function ensureClerkUser(
   db: D1Database,
   clerkId: string,
   input: Pick<User, "email" | "displayName" | "username">,
@@ -705,15 +705,9 @@ export async function attachClerkUser(
     .bind(clerkId)
     .first<{ id: string }>();
 
-  // A user may have been created by an earlier webhook before the first page
-  // load. Reuse that row instead of failing on the unique email constraint.
-  const byEmail = existing
-    ? null
-    : await db
-        .prepare("SELECT id FROM users WHERE email = ?")
-        .bind(input.email)
-        .first<{ id: string }>();
-  const id = existing?.id ?? byEmail?.id ?? crypto.randomUUID();
+  // Clerk is the identity authority. Existing profiles are returned unchanged;
+  // email and profile fields are only used when creating the first D1 row.
+  const id = existing?.id ?? crypto.randomUUID();
 
   // Usernames are unique in D1, while Clerk usernames can be changed or
   // absent. Keep the Clerk id as a deterministic fallback for collisions.
@@ -724,16 +718,7 @@ export async function attachClerkUser(
     .first<{ id: string }>();
   if (usernameOwner) username = `${input.username}-${clerkId.slice(-6)}`;
 
-  if (existing || byEmail) {
-    await db
-      .prepare(
-        `UPDATE users
-         SET clerk_id = ?, email = ?, display_name = ?, username = ?, updated_at = CURRENT_TIMESTAMP
-         WHERE id = ?`,
-      )
-      .bind(clerkId, input.email, input.displayName, username, id)
-      .run();
-  } else {
+  if (!existing) {
     await db
       .prepare(
         `INSERT INTO users (id, clerk_id, username, email, display_name, created_at)

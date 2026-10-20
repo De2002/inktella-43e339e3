@@ -52,7 +52,7 @@ function ConnectedAuthProvider({ children }: { children: ReactNode }) {
     void (async () => {
       const token = await getToken();
       if (!token) throw new Error("Your sign-in session is not ready. Please try signing in again.");
-      const response = await fetch("/api/auth/sync", {
+      const response = await fetch("/api/auth/session", {
         method: "POST",
         headers: {
           "content-type": "application/json",

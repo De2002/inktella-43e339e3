@@ -5,7 +5,6 @@ import { renderErrorPage } from "./lib/error-page";
 import { readState, writeState, cloudflareEnv, type CloudflareEnv } from "./lib/cloudflare";
 import { d1Posts, d1Reviews, d1Titles, d1Discussions, d1Query } from "./lib/d1";
 import { createClerkClient, verifyToken } from "@clerk/backend";
-import { verifyWebhook } from "@clerk/backend/webhooks";
 import { mediaKey } from "./lib/media";
 
 type ServerEntry = {
@@ -16,29 +15,6 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
   const url = new URL(request.url);
   if (!url.pathname.startsWith("/api/")) return null;
   const json = (data: unknown, status = 200) => Response.json(data, { status });
-
-  if ((url.pathname === "/api/webhooks/clerk" || url.pathname === "/api/public/webhooks/clerk") && request.method === "POST") {
-    if (!env.DB) return json({ error: "Cloudflare D1 binding DB is missing" }, 503);
-    if (!env.CLERK_WEBHOOK_SIGNING_SECRET) return json({ error: "Webhook is not configured" }, 503);
-    let event;
-    try {
-      event = await verifyWebhook(request, { signingSecret: env.CLERK_WEBHOOK_SIGNING_SECRET });
-    } catch {
-      return json({ error: "Invalid webhook signature" }, 400);
-    }
-    const { attachClerkUser } = await import("./lib/cloudflare");
-    if (event.type === "user.created" || event.type === "user.updated") {
-      const email = event.data.email_addresses.find((address) => address.id === event.data.primary_email_address_id && address.verification?.status === "verified")?.email_address;
-      if (email) {
-        await attachClerkUser(env.DB, event.data.id, {
-          email,
-          displayName: `${event.data.first_name ?? ""} ${event.data.last_name ?? ""}`.trim() || "Inktella member",
-          username: event.data.username ?? event.data.id.slice(-12),
-        });
-      }
-    }
-    return json({ ok: true });
-  }
 
   /** Verifies the Clerk session token server-side; returns the Clerk user id or an error response. */
   const verifyCaller = async (): Promise<string | Response> => {
@@ -74,29 +50,29 @@ export async function handleCloudflareApi(request: Request, env: CloudflareEnv):
     }
   }
 
-  if (url.pathname === "/api/auth/sync" && request.method === "POST") {
+  if (url.pathname === "/api/auth/session" && request.method === "POST") {
     if (!env.DB) return json({ error: "Your account cannot connect: Cloudflare D1 binding DB is missing." }, 503);
     const caller = await verifyCaller();
     if (caller instanceof Response) return caller;
     const clerkId = caller;
     // Identity comes from Clerk, never from a browser-supplied email or name.
-    const { attachClerkUser, readAccount } = await import("./lib/cloudflare");
+    const { ensureClerkUser, readAccount } = await import("./lib/cloudflare");
     try {
       const profile = await createClerkClient({ secretKey: env.CLERK_SECRET_KEY }).users.getUser(clerkId);
       const email = profile.emailAddresses.find((address) => address.id === profile.primaryEmailAddressId && address.verification?.status === "verified")?.emailAddress;
       if (!email) return json({ error: "Please verify your primary email address in Clerk before continuing." }, 422);
-      const id = await attachClerkUser(env.DB, clerkId, {
+      const id = await ensureClerkUser(env.DB, clerkId, {
         email,
         displayName: `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() || profile.username || "Inktella member",
         username: profile.username ?? profile.id.slice(-12),
       });
       const account = await readAccount(env.DB, id);
-      if (!account) throw new Error("Synced account row missing");
+      if (!account) throw new Error("Account row missing after Clerk identity lookup");
       if (account.status !== "active") return json({ error: "This account is not active." }, 403);
       return json({ id, user: account });
     } catch (error) {
-      console.error("[auth/sync] Clerk or D1 account sync failed", error instanceof Error ? error.name : "UnknownError");
-      return json({ error: "Account syncing failed. Check the Worker's Clerk key and apply the D1 migrations." }, 503);
+      console.error("[auth/session] Clerk identity lookup failed", error instanceof Error ? error.name : "UnknownError");
+      return json({ error: "Account lookup failed. Check the Worker's Clerk key and apply the D1 migrations." }, 503);
     }
   }
 
