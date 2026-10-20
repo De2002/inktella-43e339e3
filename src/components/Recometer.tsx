@@ -50,13 +50,13 @@ export function Recometer({ title }: { title: Title }) {
   const castVote = (value: "yes" | "no") =>
     requireAuth(() => setRecommendation(title.id, value), "Sign in to share whether you'd recommend this.");
 
+  const publicView = !me;
+
   return (
-    <section aria-label="Recometer" className="mt-6 rounded-lg border p-4">
+    <section aria-label="Recometer" className={publicView ? "mt-8" : "mt-6 rounded-lg border p-4"}>
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="font-display text-xl">Recometer</h2>
-        <p className="text-xs text-muted-foreground">
-          {total === 0 ? "No recommendations yet" : `${total.toLocaleString()} ${total === 1 ? "vote" : "votes"}`}
-        </p>
+        {!publicView && <p className="text-xs text-muted-foreground">{total.toLocaleString()} {total === 1 ? "vote" : "votes"}</p>}
       </div>
 
       {total > 0 ? (
@@ -66,26 +66,31 @@ export function Recometer({ title }: { title: Title }) {
             <div className="bg-foreground transition-all" style={{ width: `${yesPct}%` }} />
             <div className="bg-muted-foreground/40 transition-all" style={{ width: `${noPct}%` }} />
           </div>
-          <div className="mt-2 flex justify-between text-sm">
-            <span><strong>{yesPct}%</strong> <span className="text-muted-foreground">Would recommend</span></span>
-            <span><span className="text-muted-foreground">Wouldn't recommend</span> <strong>{noPct}%</strong></span>
+          <div className={publicView ? "mt-4 flex justify-between text-base" : "mt-2 flex justify-between text-sm"}>
+            <span><strong className={publicView ? "font-display text-3xl text-primary" : ""}>{yesPct}%</strong>{!publicView && <span className="text-muted-foreground"> Would recommend</span>}</span>
+            <span>{!publicView && <span className="text-muted-foreground">Wouldn&apos;t recommend </span>}<strong className={publicView ? "font-display text-3xl text-primary" : ""}>{noPct}%</strong></span>
           </div>
         </>
+      ) : publicView ? (
+        <div className="mt-4 flex justify-between text-base" aria-label="No recommendation data yet">
+          <strong className="font-display text-3xl text-primary">0%</strong>
+          <strong className="font-display text-3xl text-primary">0%</strong>
+        </div>
       ) : (
-        <p className="mt-3 text-sm text-muted-foreground">Be the first to say whether you'd recommend this {title.kind}.</p>
+        <p className="mt-3 text-sm text-muted-foreground">Be the first to say whether you&apos;d recommend this {title.kind}.</p>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      {!publicView && <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button size="sm" variant={mine === "yes" ? "default" : "outline"} className="rounded-full"
           aria-pressed={mine === "yes"} onClick={() => castVote("yes")}>
           <ThumbsUp /> Would recommend
         </Button>
         <Button size="sm" variant={mine === "no" ? "default" : "outline"} className="rounded-full"
           aria-pressed={mine === "no"} onClick={() => castVote("no")}>
-          <ThumbsDown /> Wouldn't recommend
+          <ThumbsDown /> Wouldn&apos;t recommend
         </Button>
         {mine && <span className="text-xs text-muted-foreground">You can change your mind anytime.</span>}
-      </div>
+      </div>}
 
     </section>
   );

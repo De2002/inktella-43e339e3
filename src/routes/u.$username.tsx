@@ -65,9 +65,18 @@ function Profile() {
   const viewerCollectionTitles = new Set(viewerCollections.flatMap((collection) => collection.titleIds));
   const sharedCollectionTitles = [...ownerCollectionTitles].filter((titleId) => viewerCollectionTitles.has(titleId));
   const sharedRecommendations = db.recommendations.filter((vote) => vote.userId === u.id && vote.value === "yes" && db.recommendations.some((other) => other.userId === viewer?.id && other.titleId === vote.titleId && other.value === "yes")).map((vote) => vote.titleId);
+  const ownerActivityTitles = [...new Set([...ownerWatched, ...ownerFavorites, ...ownerCollectionTitles])].map((id) => db.titles.find((title) => title.id === id)).filter(Boolean);
+  const viewerActivityTitles = [...new Set([...viewerWatched, ...viewerFavorites, ...viewerCollectionTitles])].map((id) => db.titles.find((title) => title.id === id)).filter(Boolean);
+  const ownerGenres = new Set(ownerActivityTitles.flatMap((title) => title?.genres ?? []));
+  const viewerGenres = new Set(viewerActivityTitles.flatMap((title) => title?.genres ?? []));
+  const sharedGenres = [...ownerGenres].filter((genre) => viewerGenres.has(genre));
+  const unionGenres = new Set([...ownerGenres, ...viewerGenres]);
   const comparableTitles = new Set([...ownerWatched, ...ownerFavorites, ...ownerCollectionTitles]);
-  const hasEnoughActivity = Boolean(viewer && (viewerWatched.size + viewerFavorites.size + viewerCollectionTitles.size > 0) && comparableTitles.size >= 2);
-  const matchScore = hasEnoughActivity ? Math.min(99, Math.round(((sharedTitleIds.length + sharedFavorites.length * 1.5 + sharedCollectionTitles.length + sharedRecommendations.length * 2) / Math.max(1, comparableTitles.size + viewerWatched.size) * 100))) : null;
+  const hasEnoughActivity = Boolean(viewer && comparableTitles.size >= 2 && viewerActivityTitles.length >= 2);
+  const titleOverlap = (sharedTitleIds.length + sharedFavorites.length + sharedCollectionTitles.length) / Math.max(1, new Set([...comparableTitles, ...viewerWatched, ...viewerFavorites, ...viewerCollectionTitles]).size);
+  const genreOverlap = sharedGenres.length / Math.max(1, unionGenres.size);
+  const recommendationSignal = sharedRecommendations.length / Math.max(1, comparableTitles.size);
+  const matchScore = hasEnoughActivity ? Math.max(1, Math.min(99, Math.round((titleOverlap * 0.55 + genreOverlap * 0.3 + recommendationSignal * 0.15) * 100))) : null;
   const followed = Boolean(viewer && db.follows.some((follow) => follow.followerId === viewer.id && follow.followingId === u.id));
   const sharedTitles = sharedTitleIds.slice(0, 4).map((titleId) => db.titles.find((title) => title.id === titleId)).filter(Boolean);
   const loadEllaDescription = async () => {
